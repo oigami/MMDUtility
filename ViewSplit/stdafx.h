@@ -13,9 +13,5 @@
 
 
 // TODO: プログラムに必要な追加ヘッダーをここで参照してください
-#include <cassert>
-#include <vector>
-#include <set>
-#include <map>
-#include <unordered_map>
-#include <functional>
+#include <d3d9.h>
+#include <DirectXMath.h>

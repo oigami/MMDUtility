@@ -533,15 +533,32 @@ public:
   virtual void PostCreateQuery(D3DQUERYTYPE Type, IDirect3DQuery9** ppQuery, HRESULT& res) {}
 };
 
-struct MMDPluginDLL3: public MMDPluginDLL2
+struct MMDPluginDLL3 : public MMDPluginDLL2
 {
-  virtual const char* getPluginTitle() const { return nullptr; }
+  virtual const char* getPluginTitle() const = 0;
+
 
   /// <summary>
-  /// SetWindowsHookExでフックしたプロシージャです。通常はこちらを使って割り込みをしてください
+  /// すべてのDLLのオブジェクトを作成し終わったときに呼ばれる
+  /// </summary>
+  virtual void start() {}
+
+  /// <summary>
+  /// MMDが終了し、DLLのオブジェクトを解放する前に呼ばれる。
+  /// </summary>
+  virtual void stop() {}
+
+  /// <summary>
+  /// SetWindowsHookEx(WH_CALLWNDPROC)でフックしたプロシージャです。通常はこちらを使って割り込みをしてください
   /// </summary>
   /// <param name="param"></param>
   virtual void WndProc(const CWPSTRUCT* param) {}
+
+  /// <summary>
+  /// SetWindowsHookEx(WH_MSGFILTER)でフックしたプロシージャです。メニュー等はこちらを使って割り込みをしてください
+  /// </summary>
+  /// <param name="param"></param>
+  virtual void WndProc(int code, const MSG* param) {}
 
   /// <summary>
   /// MMD側の呼び出しが制御できるプロシージャ
@@ -657,6 +674,11 @@ namespace mmp
   };
 }
 
+namespace mmp
+{
+  MMD_DLL_FUNC_API MMDPluginDLL3* getDLL3Object(const char* dll_title);
+}
+
 extern "C"
 {
   MMD_PLUGIN_API int version();
@@ -668,5 +690,5 @@ extern "C"
   MMD_PLUGIN_API void destroy2(MMDPluginDLL2* p);
 
   MMD_PLUGIN_API MMDPluginDLL3* create3(IDirect3DDevice9* device);
-  MMD_PLUGIN_API void destroy3(MMDPluginDLL2* p);
+  MMD_PLUGIN_API void destroy3(MMDPluginDLL3* p);
 }
