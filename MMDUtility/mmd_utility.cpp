@@ -201,7 +201,7 @@ MMDUtility::MMDUtility(IDirect3DDevice9* device) : device_(device)
   menu->AppendChild(L"test", test);
   menu->AppendChild(L"check", check);
   menu->SetWindow(hwnd, L"MMDUtility");
-
+  top_menu_ = menu;
   DrawMenuBar(hwnd);
 }
 

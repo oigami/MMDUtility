@@ -23,6 +23,7 @@ public:
 
     auto& ctrl = utility->getControl();
     auto menu = utility->getUitilityMenu();
+    menu->AppendSeparator();
     auto check_view_split = ctrl.createMenuCheckBox();
     check_view_split->command = [check_view_split,this](const control::IMenu::CommandArgs& args)
       {
