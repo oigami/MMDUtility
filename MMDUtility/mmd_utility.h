@@ -18,6 +18,23 @@
 
 namespace control
 {
+  class Control;
+
+  struct ReferenceCounter
+  {
+    MMD_UTILITY_DLL_FUNC_API virtual ~ReferenceCounter() = default;
+
+    MMD_UTILITY_DLL_FUNC_API virtual int AddRef() const;
+
+    MMD_UTILITY_DLL_FUNC_API virtual int Release() const;
+  protected:
+
+    ReferenceCounter() = default;
+
+  private:
+    mutable int ref_cnt_ = 1;
+  };
+
   struct MenuFlag
   {
     UINT flag_;
@@ -39,18 +56,8 @@ namespace control
     bool isMouseSelect() const;
   };
 
-  class IMenu
+  class IMenu : public ReferenceCounter
   {
-    int id_;
-    HMENU menu_handle_ = ::CreateMenu();
-    std::vector<std::shared_ptr<IMenu>> child_menu_;
-    HWND window_handle_ = nullptr;
-
-  protected:
-    IMenu();
-
-    explicit IMenu(int id);
-
   public:
     enum class Type
     {
@@ -59,17 +66,34 @@ namespace control
       Command,
     };
 
-    Type type = Type::List;
+  private:
+    struct Pimpl;
+    Pimpl* pimpl;
 
-    MMD_UTILITY_DLL_FUNC_API HMENU getMenuHandle() const;
+  protected:
+    MMD_UTILITY_DLL_FUNC_API IMenu(Control* ctrl);
 
-    MMD_UTILITY_DLL_FUNC_API int id() const;
+    MMD_UTILITY_DLL_FUNC_API explicit IMenu(Control* ctrl, int id);
 
-    void SetWindow(HWND hwnd, LPWSTR lpszItemName);
+  public:
+    MMD_UTILITY_DLL_FUNC_API virtual ~IMenu();
 
-    virtual ~IMenu();
+    MMD_UTILITY_DLL_FUNC_API virtual void SetType(Type t);
 
-    virtual void MenuSelect(HWND hwnd, UINT item_id_or_index, MenuFlag flag, HMENU hMenu) = 0;
+    MMD_UTILITY_DLL_FUNC_API virtual HMENU getMenuHandle() const;
+
+    MMD_UTILITY_DLL_FUNC_API virtual int id() const;
+
+    MMD_UTILITY_DLL_FUNC_API virtual void SetWindow(HWND hwnd, LPWSTR lpszItemName);
+
+
+    MMD_UTILITY_DLL_FUNC_API virtual void AppendChild(MENUITEMINFOW& mii);
+
+    MMD_UTILITY_DLL_FUNC_API virtual void AppendSeparator();
+
+    MMD_UTILITY_DLL_FUNC_API virtual void AppendChild(LPWSTR lpszItemName, IMenu* hmenuSub);
+
+    MMD_UTILITY_DLL_FUNC_API virtual void MenuSelect(HWND hwnd, UINT item_id_or_index, MenuFlag flag, HMENU hMenu) = 0;
 
     struct CommandArgs
     {
@@ -79,18 +103,16 @@ namespace control
       HWND control_hwnd;
     };
 
-    virtual void Command(const CommandArgs& args) = 0;
-
-    MMD_UTILITY_DLL_FUNC_API void AppendChild(MENUITEMINFOW& mii);
-
-    MMD_UTILITY_DLL_FUNC_API void AppendSeparator();
-
-    MMD_UTILITY_DLL_FUNC_API void AppendChild(LPWSTR lpszItemName, std::shared_ptr<IMenu> hmenuSub);
+    MMD_UTILITY_DLL_FUNC_API virtual void Command(const CommandArgs& args) = 0;
   };
 
 
   struct MenuDelegate : IMenu
   {
+    explicit MenuDelegate(Control* ctrl) : IMenu(ctrl) {}
+
+    MenuDelegate(Control* ctrl, int id) : IMenu(ctrl, id) {}
+
     void MenuSelect(HWND hwnd, UINT item_id_or_index, MenuFlag flag, HMENU hMenu) override
     {
       if ( menu_select ) menu_select(hwnd, item_id_or_index, flag, hMenu);
@@ -107,49 +129,30 @@ namespace control
 
   struct MenuCheckBox : MenuDelegate
   {
-    MMD_UTILITY_DLL_FUNC_API MenuCheckBox();
+    explicit MenuCheckBox(Control* ctrl) : MenuDelegate(ctrl) { MenuDelegate::SetType(Type::CheckBox); }
 
-    MMD_UTILITY_DLL_FUNC_API void check(bool is_check);
+    MenuCheckBox(Control* ctrl, int id) : MenuDelegate(ctrl, id) { MenuDelegate::SetType(Type::CheckBox); }
 
-    MMD_UTILITY_DLL_FUNC_API void reverseCheck();
+    MMD_UTILITY_DLL_FUNC_API virtual void check(bool is_check);
 
-    MMD_UTILITY_DLL_FUNC_API bool isChecked() const;
-  };
+    MMD_UTILITY_DLL_FUNC_API virtual void reverseCheck();
 
-  class Control
-  {
-    using ID = int;
-    std::unordered_map<ID, std::shared_ptr<IMenu>> menu_;
-    int menu_select_id_ = -1;
-    Control(const Control&) = delete;
-    void operator=(const Control&) = delete;
-  public:
-    Control() = default;
-
-    template<class T>
-    std::shared_ptr<T> createMenu();
-
-    MMD_UTILITY_DLL_FUNC_API std::shared_ptr<MenuDelegate> createMenu();
-
-    MMD_UTILITY_DLL_FUNC_API std::shared_ptr<MenuDelegate> createMenuCommand();
-
-    MMD_UTILITY_DLL_FUNC_API std::shared_ptr<MenuCheckBox> createMenuCheckBox();
-
-    MMD_UTILITY_DLL_FUNC_API void WndProc(int code, const MSG* param);
+    MMD_UTILITY_DLL_FUNC_API virtual bool isChecked() const;
   };
 }
 
 
 class MMDUtility : public MMDPluginDLL3
 {
-  control::Control ctrl_;
-  std::shared_ptr<control::IMenu> top_menu_;
 public:
 
-  control::Control& getControl() { return ctrl_; }
+  control::IMenu* getUitilityMenu() const
+  {
+    top_menu_->AddRef();
+    return top_menu_;
+  }
 
-  std::shared_ptr<control::IMenu> getUitilityMenu() const { return top_menu_; }
-
+  control::Control* getControl() { return ctrl_; }
 
   explicit MMDUtility(IDirect3DDevice9* device);
 
@@ -162,7 +165,8 @@ public:
   const char* getPluginTitle() const override { return "MMDUtility"; }
 
 private:
-
+  control::Control* ctrl_;
+  control::IMenu* top_menu_;
   IDirect3DDevice9* device_;
 };
 

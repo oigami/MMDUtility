@@ -13,6 +13,7 @@ public:
   explicit ViewSplit(IDirect3DDevice9* device): device_(device) {}
 
   bool is_split_ = false;
+  bool is_camera_right_bottom = false;
 
   void start() override
   {
@@ -21,16 +22,27 @@ public:
     auto utility = dynamic_cast<MMDUtility*>(utility_dll);
     if ( utility == nullptr ) return;
 
-    auto& ctrl = utility->getControl();
     auto menu = utility->getUitilityMenu();
-    menu->AppendSeparator();
-    auto check_view_split = ctrl.createMenuCheckBox();
+    auto ctrl = utility->getControl();
+    auto check_view_split = new control::MenuCheckBox(ctrl);
     check_view_split->command = [check_view_split,this](const control::IMenu::CommandArgs&)
       {
         check_view_split->reverseCheck();
         is_split_ = check_view_split->isChecked();
       };
     menu->AppendChild(L"画面分割", check_view_split);
+
+    auto check_camera_pos = new control::MenuCheckBox(ctrl);
+    check_camera_pos->command = [check_camera_pos, this](const control::IMenu::CommandArgs&)
+      {
+        check_camera_pos->reverseCheck();
+        is_camera_right_bottom = check_camera_pos->isChecked();
+      };
+    menu->AppendChild(L"カメラを右下にする", check_camera_pos);
+
+    //check_view_split->Release();
+    menu->AppendSeparator();
+    //menu->Release();
   }
 
   static DirectX::XMMATRIX toMatrix(D3DMATRIX mat)
@@ -49,15 +61,16 @@ public:
 
   void DrawIndexedPrimitive(D3DPRIMITIVETYPE PrimitiveType, INT BaseVertexIndex, UINT MinVertexIndex, UINT NumVertices, UINT startIndex, UINT primCount) override
   {
-    if ( is_split_ == false ) return;
-
     static int now_draw = 0;
     if ( now_draw ) return;
+
+    device_->GetViewport(&back_viewport_);
+    if ( is_split_ == false ) return;
+
     now_draw = 1;
     D3DMATRIX dworld, dview;
     device_->GetTransform(D3DTS_WORLD, &dworld);
     device_->GetTransform(D3DTS_VIEW, &dview);
-    device_->GetViewport(&back_viewport_);
 
     auto DrawView = [=](D3DVIEWPORT9 viewport, DirectX::XMMATRIX worldx)
       {
@@ -72,10 +85,9 @@ public:
         D3DVIEWPORT9 viewport = back_viewport_;
         viewport.Width = viewport.Width / 2;
         viewport.Height = viewport.Height / 2;
-        IDirect3DSurface9* tmp_depth;
-        device_->GetDepthStencilSurface(&tmp_depth);
         if ( depth_buf[0] == nullptr )
         {
+          device_->GetDepthStencilSurface(&tmp_depth);
           if ( tmp_depth )
           {
             D3DSURFACE_DESC desc;
@@ -98,12 +110,17 @@ public:
         viewport.Y += viewport.Height;
         device_->SetDepthStencilSurface(depth_buf[2]);
         DrawView(viewport, DirectX::XMMatrixRotationY(-DirectX::XM_PI / 2));
+        if ( is_camera_right_bottom )
+        {
+          viewport.X += viewport.Width;
+          device_->SetViewport(&viewport);
+        }
+        else
+        {
+          device_->SetViewport(&back_viewport_);
+        }
 
-        viewport.X += viewport.Width;
-        device_->SetDepthStencilSurface(tmp_depth);
-        if ( tmp_depth ) tmp_depth->Release();
-
-        device_->SetViewport(&back_viewport_);
+        device_->SetDepthStencilSurface(depth_buf[3]);
         device_->SetTransform(D3DTS_WORLD, &dworld);
         device_->SetTransform(D3DTS_VIEW, &dview);
       };
@@ -130,6 +147,7 @@ public:
   void PostDrawIndexedPrimitive(D3DPRIMITIVETYPE, INT /*BaseVertexIndex*/, UINT /*MinVertexIndex*/, UINT /*NumVertices*/, UINT /*startIndex*/, UINT /*primCount*/, HRESULT& /*res*/) override
   {
     device_->SetViewport(&back_viewport_);
+    if ( tmp_depth ) device_->SetDepthStencilSurface(tmp_depth);
 
     return;
   }
@@ -148,15 +166,16 @@ public:
     }
 
     device_->SetDepthStencilSurface(tmp);
-    tmp->Release();
+    if ( tmp ) tmp->Release();
     now_clear = 0;
   }
 
 
   const char* getPluginTitle() const override { return "MMDUtility_ViewSplit"; }
 
-  IDirect3DSurface9* depth_buf[3] = {};
+  IDirect3DSurface9* depth_buf[4] = {};
   D3DVIEWPORT9 back_viewport_;
+  IDirect3DSurface9* tmp_depth = nullptr;
   IDirect3DDevice9* device_;
 };
 
