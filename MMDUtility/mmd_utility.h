@@ -39,7 +39,7 @@ namespace control
     bool isMouseSelect() const;
   };
 
-  MMD_UTILITY_DLL_FUNC_API class IMenu
+  class IMenu
   {
     int id_;
     HMENU menu_handle_ = ::CreateMenu();
@@ -47,9 +47,9 @@ namespace control
     HWND window_handle_ = nullptr;
 
   protected:
-    MMD_UTILITY_DLL_FUNC_API IMenu();
+    IMenu();
 
-    MMD_UTILITY_DLL_FUNC_API explicit IMenu(int id);
+    explicit IMenu(int id);
 
   public:
     enum class Type
@@ -65,11 +65,11 @@ namespace control
 
     MMD_UTILITY_DLL_FUNC_API int id() const;
 
-    MMD_UTILITY_DLL_FUNC_API void SetWindow(HWND hwnd, LPWSTR lpszItemName);
+    void SetWindow(HWND hwnd, LPWSTR lpszItemName);
 
-    MMD_UTILITY_DLL_FUNC_API virtual ~IMenu();
+    virtual ~IMenu();
 
-    MMD_UTILITY_DLL_FUNC_API virtual void MenuSelect(HWND hwnd, UINT item_id_or_index, MenuFlag flag, HMENU hMenu) = 0;
+    virtual void MenuSelect(HWND hwnd, UINT item_id_or_index, MenuFlag flag, HMENU hMenu) = 0;
 
     struct CommandArgs
     {
@@ -88,11 +88,18 @@ namespace control
     MMD_UTILITY_DLL_FUNC_API void AppendChild(LPWSTR lpszItemName, std::shared_ptr<IMenu> hmenuSub);
   };
 
+
   struct MenuDelegate : IMenu
   {
-    void MenuSelect(HWND hwnd, UINT item_id_or_index, MenuFlag flag, HMENU hMenu) override;
+    void MenuSelect(HWND hwnd, UINT item_id_or_index, MenuFlag flag, HMENU hMenu) override
+    {
+      if ( menu_select ) menu_select(hwnd, item_id_or_index, flag, hMenu);
+    }
 
-    void Command(const CommandArgs& args) override;
+    void Command(const CommandArgs& args) override
+    {
+      if ( command ) command(args);
+    }
 
     std::function<void(const CommandArgs&)> command;
     std::function<void(HWND, UINT, MenuFlag, HMENU)> menu_select;
@@ -100,7 +107,7 @@ namespace control
 
   struct MenuCheckBox : MenuDelegate
   {
-    MenuCheckBox();
+    MMD_UTILITY_DLL_FUNC_API MenuCheckBox();
 
     MMD_UTILITY_DLL_FUNC_API void check(bool is_check);
 
@@ -118,18 +125,20 @@ namespace control
     void operator=(const Control&) = delete;
   public:
     Control() = default;
+
     template<class T>
     std::shared_ptr<T> createMenu();
 
-    std::shared_ptr<MenuDelegate> createMenu();
+    MMD_UTILITY_DLL_FUNC_API std::shared_ptr<MenuDelegate> createMenu();
 
-    std::shared_ptr<MenuDelegate> createMenuCommand();
+    MMD_UTILITY_DLL_FUNC_API std::shared_ptr<MenuDelegate> createMenuCommand();
 
     MMD_UTILITY_DLL_FUNC_API std::shared_ptr<MenuCheckBox> createMenuCheckBox();
 
-    void WndProc(int code, const MSG* param);
+    MMD_UTILITY_DLL_FUNC_API void WndProc(int code, const MSG* param);
   };
 }
+
 
 class MMDUtility : public MMDPluginDLL3
 {

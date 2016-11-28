@@ -25,7 +25,7 @@ public:
     auto menu = utility->getUitilityMenu();
     menu->AppendSeparator();
     auto check_view_split = ctrl.createMenuCheckBox();
-    check_view_split->command = [check_view_split,this](const control::IMenu::CommandArgs& args)
+    check_view_split->command = [check_view_split,this](const control::IMenu::CommandArgs&)
       {
         check_view_split->reverseCheck();
         is_split_ = check_view_split->isChecked();
@@ -67,7 +67,7 @@ public:
         device_->SetViewport(&viewport);
         device_->DrawIndexedPrimitive(PrimitiveType, BaseVertexIndex, MinVertexIndex, NumVertices, startIndex, primCount);
       };
-    auto Draw = [=](D3DMATRIX center)
+    auto Draw = [=](D3DMATRIX /*center*/)
       {
         D3DVIEWPORT9 viewport = back_viewport_;
         viewport.Width = viewport.Width / 2;
@@ -127,7 +127,7 @@ public:
     now_draw = 0;
   }
 
-  void PostDrawIndexedPrimitive(D3DPRIMITIVETYPE, INT BaseVertexIndex, UINT MinVertexIndex, UINT NumVertices, UINT startIndex, UINT primCount, HRESULT& res) override
+  void PostDrawIndexedPrimitive(D3DPRIMITIVETYPE, INT /*BaseVertexIndex*/, UINT /*MinVertexIndex*/, UINT /*NumVertices*/, UINT /*startIndex*/, UINT /*primCount*/, HRESULT& /*res*/) override
   {
     device_->SetViewport(&back_viewport_);
 
@@ -144,7 +144,7 @@ public:
     for ( auto& i : depth_buf )
     {
       device_->SetDepthStencilSurface(i);
-      device_->Clear(0, nullptr, D3DCLEAR_ZBUFFER, 0, 1.0f, 0);
+      device_->Clear(Count, pRects, Flags, Color, Z, Stencil);
     }
 
     device_->SetDepthStencilSurface(tmp);

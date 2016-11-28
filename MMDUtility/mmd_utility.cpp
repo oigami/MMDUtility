@@ -1,20 +1,21 @@
 ﻿#include "mmd_utility.h"
+template class std::function<void(const control::IMenu::CommandArgs&)>;
 
-bool control::MenuFlag::isGrayed() const { return flag_ & MF_GRAYED; }
+bool control::MenuFlag::isGrayed() const { return (flag_ & MF_GRAYED) != 0; }
 
-bool control::MenuFlag::isDisabled() const { return flag_ & MF_DISABLED; }
+bool control::MenuFlag::isDisabled() const { return (flag_ & MF_DISABLED) != 0; }
 
-bool control::MenuFlag::isBitmap() const { return flag_ & MF_BITMAP; }
+bool control::MenuFlag::isBitmap() const { return (flag_ & MF_BITMAP) != 0; }
 
-bool control::MenuFlag::isPopUp() const { return flag_ & MF_POPUP; }
+bool control::MenuFlag::isPopUp() const { return (flag_ & MF_POPUP) != 0; }
 
-bool control::MenuFlag::isHilite() const { return flag_ & MF_HILITE; }
+bool control::MenuFlag::isHilite() const { return (flag_ & MF_HILITE) != 0; }
 
-bool control::MenuFlag::isOwnerDraw() const { return flag_ & MF_OWNERDRAW; }
+bool control::MenuFlag::isOwnerDraw() const { return (flag_ & MF_OWNERDRAW) != 0; }
 
-bool control::MenuFlag::isSystemMenu() const { return flag_ & MF_SYSMENU; }
+bool control::MenuFlag::isSystemMenu() const { return (flag_ & MF_SYSMENU) != 0; }
 
-bool control::MenuFlag::isMouseSelect() const { return flag_ & MF_MOUSESELECT; }
+bool control::MenuFlag::isMouseSelect() const { return (flag_ & MF_MOUSESELECT) != 0; }
 
 control::IMenu::IMenu() : id_(createWM_APP_ID()) {}
 
@@ -98,16 +99,6 @@ void control::IMenu::AppendChild(LPWSTR lpszItemName, std::shared_ptr<IMenu> hme
   InsertMenuItemW(menu_handle_, mii.wID, FALSE, &mii);
 }
 
-void control::MenuDelegate::MenuSelect(HWND hwnd, UINT item_id_or_index, MenuFlag flag, HMENU hMenu)
-{
-  if ( menu_select ) menu_select(hwnd, item_id_or_index, flag, hMenu);
-}
-
-void control::MenuDelegate::Command(const CommandArgs& args)
-{
-  if ( command ) command(args);
-}
-
 control::MenuCheckBox::MenuCheckBox() { type = Type::CheckBox; }
 
 void control::MenuCheckBox::check(bool is_check)
@@ -120,7 +111,7 @@ void control::MenuCheckBox::reverseCheck() { check(!isChecked()); }
 bool control::MenuCheckBox::isChecked() const
 {
   auto uState = GetMenuState(GetMenu(getHWND()), id(), MF_BYCOMMAND);
-  return uState & MFS_CHECKED;
+  return (uState & MFS_CHECKED) != 0;
 }
 
 template<class T>
@@ -148,7 +139,7 @@ std::shared_ptr<control::MenuCheckBox> control::Control::createMenuCheckBox()
   return createMenu<MenuCheckBox>();
 }
 
-void control::Control::WndProc(int code, const MSG* param)
+void control::Control::WndProc(int /*code*/, const MSG* param)
 {
   //menu_select_id_ = -1;
   switch ( param->message )
@@ -161,7 +152,7 @@ void control::Control::WndProc(int code, const MSG* param)
       IMenu::CommandArgs args;
       args.window_hwnd = param->hwnd;
       args.item_id = LOWORD(param->wParam);
-      args.notify_code = param->wParam;
+      args.notify_code = HIWORD(param->wParam);
       args.control_hwnd = (HWND) param->lParam;
       it->second->Command(args);
     }
@@ -169,7 +160,7 @@ void control::Control::WndProc(int code, const MSG* param)
   }
   case WM_MENUSELECT:
   {
-    printf("WM_MENUSELECT %x %x %x\n", param->message, LOWORD(param->wParam), param->lParam);
+    printf("WM_MENUSELECT %x %x %lld\n", param->message, LOWORD(param->wParam), param->lParam);
     menu_select_id_ = LOWORD(param->wParam);
     auto it = menu_.find(menu_select_id_);
     if ( it != menu_.end() )
@@ -187,25 +178,12 @@ MMDUtility::MMDUtility(IDirect3DDevice9* device) : device_(device)
 {
   auto hwnd = getHWND();
   auto menu = ctrl_.createMenu();
-
-  auto test = ctrl_.createMenuCommand();
-  test->menu_select = [](auto hwnd, auto item, auto flag, auto menu)
-    {
-      printf("menu select\n");
-    };
-  auto check = ctrl_.createMenuCheckBox();
-  check->command = [check](const control::IMenu::CommandArgs& args)
-    {
-      check->reverseCheck();
-    };
-  menu->AppendChild(L"test", test);
-  menu->AppendChild(L"check", check);
   menu->SetWindow(hwnd, L"MMDUtility");
   top_menu_ = menu;
   DrawMenuBar(hwnd);
 }
 
-void MMDUtility::WndProc(const CWPSTRUCT* param)
+void MMDUtility::WndProc(const CWPSTRUCT* /*param*/)
 {
   //ctrl_.WndProc(param);
   //printf("%x %x %x\n", param->message, param->lParam, param->wParam);
@@ -217,7 +195,7 @@ void MMDUtility::WndProc(int code, const MSG* param)
   //printf("%x %x %x\n", param->message, param->lParam, param->wParam);
 }
 
-std::pair<bool, LRESULT> MMDUtility::WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) { return { false,0 }; }
+std::pair<bool, LRESULT> MMDUtility::WndProc(HWND, UINT, WPARAM, LPARAM) { return { false,0 }; }
 
 void OpenConsole()
 {
