@@ -15,3 +15,6 @@
 // TODO: プログラムに必要な追加ヘッダーをここで参照してください
 #include <d3d9.h>
 #include <DirectXMath.h>
+#include <windowsx.h>
+#include <array>
+#include <Commctrl.h>

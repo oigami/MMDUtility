@@ -549,16 +549,34 @@ struct MMDPluginDLL3 : public MMDPluginDLL2
   virtual void stop() {}
 
   /// <summary>
-  /// SetWindowsHookEx(WH_CALLWNDPROC)でフックしたプロシージャです。通常はこちらを使って割り込みをしてください
+  /// SetWindowsHookEx(WH_CALLWNDPROC)でフックしたプロシージャです。
   /// </summary>
   /// <param name="param"></param>
   virtual void WndProc(const CWPSTRUCT* param) {}
 
   /// <summary>
-  /// SetWindowsHookEx(WH_MSGFILTER)でフックしたプロシージャです。メニュー等はこちらを使って割り込みをしてください
+  /// SetWindowsHookEx(WH_MSGFILTER)でフックしたプロシージャです。
   /// </summary>
   /// <param name="param"></param>
-  virtual void WndProc(int code, const MSG* param) {}
+  virtual void MsgProc(int code, const MSG* param) {}
+
+  /// <summary>
+  /// SetWindowsHookEx(WH_MOUSE)でフックしたプロシージャです。
+  /// </summary>
+  /// <param name="param"></param>
+  virtual void MouseProc(WPARAM wParam, const MOUSEHOOKSTRUCT* param) {}
+
+  /// <summary>
+  /// SetWindowsHookEx(WH_GETMESSAGE)でフックしたプロシージャです。
+  /// </summary>
+  /// <param name="param"></param>
+  virtual void GetMsgProc(int code, const MSG* param) {}
+
+  /// <summary>
+  /// SetWindowsHookEx(WH_KEYBOARD)でフックしたプロシージャです。
+  /// </summary>
+  /// <param name="param"></param>
+  virtual void KeyBoardProc(WPARAM wParam, LPARAM lParam) {}
 
   /// <summary>
   /// MMD側の呼び出しが制御できるプロシージャ
@@ -654,6 +672,7 @@ namespace mmp
 
     bool hook(const char* module_name, const char* func_name, Func new_func)
     {
+      is_init = true;
       impl_ = std::make_shared<detail::FuncBinderImpl<Func>>(module_name, func_name, new_func);
       detail::IFuncBinderImpl::addPrev(impl_, impl_->oridinal_func_, new_func);
       return true;
@@ -661,7 +680,8 @@ namespace mmp
 
     void reset()
     {
-      if ( !impl_ ) return;
+      is_init = false;
+      if ( is_init == false || !impl_ ) return;
       detail::IFuncBinderImpl::deleteFunc(impl_->new_func_);
       impl_->reset();
     }
@@ -669,14 +689,14 @@ namespace mmp
     Result operator()(Args ... args) { return (*impl_)(args...); }
 
   private:
-
+    bool is_init = true;
     std::shared_ptr<detail::FuncBinderImpl<Func>> impl_;
   };
 }
 
 namespace mmp
 {
-  MMD_DLL_FUNC_API MMDPluginDLL3* getDLL3Object(const char* dll_title);
+  MMD_PLUGIN_API MMDPluginDLL3* getDLL3Object(const char* dll_title);
 }
 
 extern "C"

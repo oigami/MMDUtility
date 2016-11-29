@@ -158,7 +158,7 @@ public:
 
   void WndProc(const CWPSTRUCT* param) override;
 
-  void WndProc(int code, const MSG* param) override;
+  void MsgProc(int code, const MSG* param) override;
 
   std::pair<bool, LRESULT> WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) override;
 

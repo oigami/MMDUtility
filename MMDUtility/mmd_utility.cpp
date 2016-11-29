@@ -177,6 +177,7 @@ namespace control
     {
     case WM_LBUTTONUP:
     {
+      printf("lbuttonup %d\n", menu_select_id_);
       auto it = menu_.find(menu_select_id_);
       if ( it != menu_.end() )
       {
@@ -215,16 +216,24 @@ MMDUtility::MMDUtility(IDirect3DDevice9* device) : device_(device)
   DrawMenuBar(hwnd);
 }
 
-void MMDUtility::WndProc(const CWPSTRUCT* /*param*/)
+void MMDUtility::WndProc(const CWPSTRUCT* param)
 {
   //ctrl_.WndProc(param);
+  switch ( param->message )
+  {
+  case WM_COMMAND:
+    printf("%x %d %d %d %d %d\n", param->message, HIWORD(param->lParam),LOWORD(param->lParam),HIWORD(param->wParam), LOWORD(param->wParam));
+
+  default:
+    break;
+  }
   //printf("%x %x %x\n", param->message, param->lParam, param->wParam);
 }
 
-void MMDUtility::WndProc(int code, const MSG* param)
+void MMDUtility::MsgProc(int code, const MSG* param)
 {
   ctrl_->WndProc(code, param);
-  //printf("%x %x %x\n", param->message, param->lParam, param->wParam);
+  //printf("%x %lld %lld\n", param->message, param->lParam, param->wParam);
 }
 
 std::pair<bool, LRESULT> MMDUtility::WndProc(HWND, UINT, WPARAM, LPARAM) { return { false,0 }; }
