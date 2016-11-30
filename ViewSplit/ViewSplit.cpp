@@ -246,37 +246,41 @@ public:
         device_->SetRenderState(D3DRS_BLENDFACTOR, color);
         device_->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_BLENDFACTOR);
         device_->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVBLENDFACTOR);
-        device_->SetRenderState(D3DRS_SRCBLENDALPHA, D3DBLEND_BLENDFACTOR);
 
         device_->DrawIndexedPrimitive(PrimitiveType, BaseVertexIndex, MinVertexIndex, NumVertices, startIndex, primCount);
+
+
+        {
+
+          device_->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
+          device_->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
+#define FVF_VERTEX   (D3DFVF_XYZRHW | D3DFVF_DIFFUSE)
+          D3DVERTEX pt[] = {
+            { v.X , v.Y, 0.0001, 1 , 0x30FFFF00 } ,
+            { v.X + v.Width, v.Y, 0.0001 , 1, 0x30FFFF00 } ,
+            { v.X + v.Width, v.Y + v.Height, 0.0001 , 1 , 0x30FFFF00 },
+            { v.X, v.Y + v.Height, 0.0001 , 1 , 0x30FFFF00 },
+            { v.X , v.Y , 0.0001, 1, 0x30FFFF00 } ,
+          };
+          DWORD fvf;
+          device_->GetFVF(&fvf);
+          device_->SetFVF(FVF_VERTEX);
+
+          IDirect3DVertexBuffer9* buffer;
+          UINT offset, stride;
+          device_->GetStreamSource(0, &buffer, &offset, &stride);
+          //頂点データ(v)を渡して描画する
+          device_->DrawPrimitiveUP(D3DPT_LINESTRIP, 4, pt, sizeof(D3DVERTEX));
+          device_->SetFVF(fvf);
+          device_->SetStreamSource(0, buffer, offset, stride);
+          if ( buffer ) buffer->Release();
+        }
 
         device_->SetRenderState(D3DRS_BLENDFACTOR, back_color);
         device_->SetRenderState(D3DRS_ALPHABLENDENABLE, is_alphablend);
         device_->SetRenderState(D3DRS_SRCBLEND, src_blend);
         device_->SetRenderState(D3DRS_DESTBLEND, dest_blend);
         device_->SetRenderState(D3DRS_SRCBLENDALPHA, src_alpha);
-
-
-#define FVF_VERTEX   (D3DFVF_XYZRHW | D3DFVF_DIFFUSE)
-        D3DVERTEX pt[] = {
-          { v.X , v.Y, 0.0001, 1 , 0xFFFFFF00 } ,
-          { v.X + v.Width, v.Y, 0.0001 , 1, 0xFFFFFF00 } ,
-          { v.X + v.Width, v.Y + v.Height, 0.0001 , 1 , 0xFFFFFF00 },
-          { v.X, v.Y + v.Height, 0.0001 , 1 , 0xFFFFFF00 },
-          { v.X , v.Y , 0.0001, 1, 0xFFFFFF00 } ,
-        };
-        DWORD fvf;
-        device_->GetFVF(&fvf);
-        device_->SetFVF(FVF_VERTEX);
-
-        IDirect3DVertexBuffer9* buffer;
-        UINT offset, stride;
-        device_->GetStreamSource(0, &buffer, &offset, &stride);
-        //頂点データ(v)を渡して描画する
-        device_->DrawPrimitiveUP(D3DPT_LINESTRIP, 4, pt, sizeof(D3DVERTEX));
-        device_->SetFVF(fvf);
-        device_->SetStreamSource(0, buffer, offset, stride);
-        if ( buffer ) buffer->Release();
 
       };
     auto Draw = [=](D3DMATRIX /*center*/)
