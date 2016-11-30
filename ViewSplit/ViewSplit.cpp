@@ -113,7 +113,7 @@ public:
         {
           check_use_menu->reverseCheck();
           is_split_ = check_use_menu->isChecked();
-          Button_SetCheck(GetDlgItem(dialog_hwnd,IS_USE_SPLIT_VIEW), true);
+          Button_SetCheck(GetDlgItem(dialog_hwnd,IS_USE_SPLIT_VIEW), is_split_);
         };
       
       menu->AppendChild(L"画面分割", check_use_menu);
