@@ -73,21 +73,25 @@
     <LinkIncremental>true</LinkIncremental>
     <IncludePath>$(ProjectDIr)mmdplugin;$(IncludePath)</IncludePath>
     <LibraryWPath>$(ProjectDIr)mmdplugin;$(LibraryWPath)</LibraryWPath>
+    <OutDir>C:\tool\MikuMikuDance_v926x64\plugin\MMDUtility\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
     <IncludePath>$(ProjectDIr)mmdplugin;$(IncludePath)</IncludePath>
     <LibraryWPath>$(ProjectDIr)mmdplugin;$(LibraryWPath)</LibraryWPath>
+    <OutDir>C:\tool\MikuMikuDance_v926x64\plugin\MMDUtility\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
     <IncludePath>$(ProjectDIr)mmdplugin;$(IncludePath)</IncludePath>
     <LibraryWPath>$(ProjectDIr)mmdplugin;$(LibraryWPath)</LibraryWPath>
+    <OutDir>C:\tool\MikuMikuDance_v926x64\plugin\MMDUtility\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
     <IncludePath>$(ProjectDIr)mmdplugin;$(IncludePath)</IncludePath>
     <LibraryWPath>$(ProjectDIr)mmdplugin;$(LibraryWPath)</LibraryWPath>
+    <OutDir>C:\tool\MikuMikuDance_v926x64\plugin\MMDUtility\</OutDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>

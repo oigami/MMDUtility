@@ -5,6 +5,19 @@ VisualStudioVersion = 14.0.25420.1
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "MMDUtility", "MMDUtility\MMDUtility.vcxproj", "{8D37D925-CA15-431B-B8ED-BA2EF1A12884}"
 EndProject
+Project("{911E67C6-3D85-4FCE-B560-20A9C3E3FF48}") = "MikuMikuDance", "C:\tool\MikuMikuDance_v926x64\MikuMikuDance.exe", "{EA89FFE5-5742-4907-8BAC-7BC82428547B}"
+	ProjectSection(DebuggerProjectSystem) = preProject
+		PortSupplier = 00000000-0000-0000-0000-000000000000
+		Executable = C:\tool\MikuMikuDance_v926x64\MikuMikuDance.exe
+		RemoteMachine = T45157DR-PC
+		StartingDirectory = C:\tool\MikuMikuDance_v926x64
+		Environment = 既定
+		LaunchingEngine = 00000000-0000-0000-0000-000000000000
+		UseLegacyDebugEngines = No
+		LaunchSQLEngine = No
+		AttachLaunchAction = No
+	EndProjectSection
+EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ViewSplit", "ViewSplit\ViewSplit.vcxproj", "{EA3801C1-295D-45E1-9250-F3802788A3E1}"
 	ProjectSection(ProjectDependencies) = postProject
 		{8D37D925-CA15-431B-B8ED-BA2EF1A12884} = {8D37D925-CA15-431B-B8ED-BA2EF1A12884}

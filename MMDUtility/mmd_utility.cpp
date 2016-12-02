@@ -1,4 +1,8 @@
 ﻿#include "mmd_utility.h"
+#ifdef NDEBUG
+#define printf(...) (void)0
+
+#endif // !NDEBUG
 
 namespace control
 {

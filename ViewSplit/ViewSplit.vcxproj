@@ -71,21 +71,23 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
-    <OutDir>C:\tool\MikuMikuDance_v926x64\plugin\MMDUtility</OutDir>
+    <OutDir>C:\tool\MikuMikuDance_v926x64\plugin\MMDUtility\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
-    <LibraryPath>$(SolutionDir)MMDUtility\;$(LibraryPath)</LibraryPath>
-    <OutDir>C:\tool\MikuMikuDance_v926x64\plugin\MMDUtility</OutDir>
+    <LibraryPath>$(SolutionDir)MMDUtility\;$(DXSDK_DIR)\lib\x64;$(LibraryPath)</LibraryPath>
+    <OutDir>C:\tool\MikuMikuDance_v926x64\plugin\MMDUtility\</OutDir>
+    <IncludePath>$(DXSDK_DIR)\include;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
-    <OutDir>C:\tool\MikuMikuDance_v926x64\plugin\MMDUtility</OutDir>
+    <OutDir>C:\tool\MikuMikuDance_v926x64\plugin\MMDUtility\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
-    <LibraryPath>$(SolutionDir)MMDUtility\;$(LibraryPath)</LibraryPath>
-    <OutDir>C:\tool\MikuMikuDance_v926x64\plugin\MMDUtility</OutDir>
+    <LibraryPath>$(SolutionDir)MMDUtility\;$(DXSDK_DIR)\lib\x64;$(LibraryPath)</LibraryPath>
+    <OutDir>C:\tool\MikuMikuDance_v926x64\plugin\MMDUtility\</OutDir>
+    <IncludePath>$(DXSDK_DIR)\include;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>

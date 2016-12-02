@@ -19,3 +19,6 @@
 #include <windowsx.h>
 #include <array>
 #include <Commctrl.h>
+#include <fstream>
+#include <experimental/filesystem>
+namespace filesystem = std::experimental::filesystem;
