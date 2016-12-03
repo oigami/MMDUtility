@@ -8,6 +8,19 @@
 #include <Commdlg.h>
 extern HMODULE g_module;
 
+template<class T>
+void println(std::ostream& ofs, T t)
+{
+  ofs << t << std::endl;
+}
+
+template<class A, class...T>
+void println(std::ostream& ofs, A a, T ... t)
+{
+  ofs << a << ' ';
+  println(ofs, t...);
+}
+
 typedef struct
 {
   float x, y, z, rhw;
@@ -16,39 +29,119 @@ typedef struct
 
 struct Rect
 {
-  int x, y, width, height;
-  float scale = 1.0f;
+private:
+  // 正規化済み
+  float x_, y_, width_, height_;
+  float scale_ = 1.0f;
+public:
 
-  D3DVIEWPORT9 getViewport(float min_z, float max_z) const
+  Rect(): x_(0), y_(0), width_(0.5f), height_(0.5f) {}
+
+  Rect(float x, float y, float width, float height)
+    : x_(x),
+      y_(y),
+      width_(width),
+      height_(height) {}
+
+  void setScale(float scale)
   {
-    D3DVIEWPORT9 v;
-    v.MinZ = min_z;
-    v.MaxZ = max_z;
-    if ( x < 0 )
-    {
-      v.X = 0;
-      v.Width = width + x;
-    }
-    else
-    {
-      v.X = x;
-      v.Width = width;
-    }
-    if ( y < 0 )
-    {
-      v.Y = 0;
-      v.Height = height + y;
-    }
-    else
-    {
-      v.Y = y;
-      v.Height = height;
-    }
-    v.Height *= scale;
-    v.Width *= scale;
+    scale = 1.0f;
+    scale_ = std::max(scale_, 0.1f);
+  }
+
+  float getScale() const { return scale_; }
+
+  void scale(float d_scale)
+  {
+    scale_ += d_scale;
+    scale_ = std::max(scale_, 0.1f);
+  }
+
+  void move(const D3DVIEWPORT9& viewport, int x, int y)
+  {
+    x_ += float(x) / viewport.Width;
+    y_ += float(y) / viewport.Height;
+  }
+
+  bool contains(const D3DVIEWPORT9& viewport, POINT pos) const
+  {
+    const int cx = x(viewport);
+    const int cy = y(viewport);
+    const int cwidth = width(viewport);
+    const int cheight = height(viewport);
+
+    return cx <= pos.x && pos.x <= cx + cwidth && cy <= pos.y && pos.y <= cy + cheight;
+  }
+
+  int x(const D3DVIEWPORT9& viewport) const
+  {
+    int res = ax(viewport);
+    if ( res < 0 ) return 0;
+    return res;
+  }
+
+  int y(const D3DVIEWPORT9& viewport) const
+  {
+    int res = ay(viewport);
+    if ( res < 0 ) return 0;
+    return res;
+  }
+
+  int ax(const D3DVIEWPORT9& viewport) const
+  {
+    return viewport.X + x_ * viewport.Width;
+  }
+
+  int ay(const D3DVIEWPORT9& viewport) const
+  {
+    return viewport.Y + y_ * viewport.Height;
+  }
+
+
+  int width(const D3DVIEWPORT9& viewport) const
+  {
+    int sx = ax(viewport);
+    int res = width_ * viewport.Width * scale_;
+    if ( sx < 0 ) res += sx;
+    return res;
+  }
+
+  int height(const D3DVIEWPORT9& viewport) const
+  {
+    int sy = ay(viewport);
+    int res = height_ * viewport.Height * scale_;
+    if ( sy < 0 ) res += sy;
+    return res;
+  }
+
+  D3DVIEWPORT9 getViewport(const D3DVIEWPORT9& viewport) const
+  {
+    D3DVIEWPORT9 v = viewport;
+    v.Width = width(viewport);
+    v.Height = height(viewport);
+    v.X = x(viewport);
+    v.Y = y(viewport);
     return v;
   }
+
+  void save(std::ostream& ofs) const
+  {
+    println(ofs, x_, y_, width_, height_, scale_);
+  }
+
+  void load(std::istream& ifs, int version, const D3DVIEWPORT9& viewport)
+  {
+    ifs >> x_ >> y_ >> width_ >> height_ >> scale_;
+    if ( version == 1 )
+    {
+      x_ = (x_ - viewport.X) / viewport.Width;
+      y_ = (y_ - viewport.Y) / viewport.Height;
+      width_ /= viewport.Width;
+      height_ /= viewport.Height;
+    }
+  }
 };
+
 
 struct ViewData
 {
@@ -71,23 +164,10 @@ struct ViewData
 
   DirectX::XMVECTOR pre_position;
 
-  template<class T>
-  void println(std::ostream& ofs, T t)
-  {
-    ofs << t << std::endl;
-  }
-
-  template<class A, class...T>
-  void println(std::ostream& ofs, A a, T ... t)
-  {
-    ofs << a << ' ';
-    println(ofs, t...);
-  }
-
   void save(std::ofstream& ofs)
   {
     println(ofs, is_use_ ? "1" : "0");
-    println(ofs, view.x, view.y, view.width, view.height, view.scale);
+    view.save(ofs);
     println(ofs, alpha_val);
 
     println(ofs, (int) camera_type);
@@ -98,12 +178,12 @@ struct ViewData
     println(ofs, camera.distance);
   }
 
-  void load(std::ifstream& ifs)
+  void load(std::ifstream& ifs, const D3DVIEWPORT9& viewport, int version)
   {
     int is_use;
     ifs >> is_use;
     is_use_ = is_use == 1;
-    ifs >> view.x >> view.y >> view.width >> view.height >> view.scale;
+    view.load(ifs, version, viewport);
     ifs >> alpha_val;
     ifs >> (int&) camera_type;
     DirectX::XMFLOAT3A lookat;
@@ -163,19 +243,11 @@ public:
       data_[i].camera_type = ViewData::CameraType::Fix;
     }
     // ビューポートの設定
-    data_[0].view.x = viewport.X;
-    data_[0].view.y = viewport.Y;
-    data_[0].view.width = viewport.Width;
-    data_[0].view.height = viewport.Height;
+    data_[0].view = Rect(0, 0, 0.5f, 0.5f);
+    data_[1].view = Rect(0.5f, 0, 0.5f, 0.5f);
+    data_[2].view = Rect(0, 0.5f, 0.5f, 0.5f);
+    data_[3].view = Rect(0.5f, 0.5f, 0.5f, 0.5f);
 
-    data_[1].view = data_[0].view;
-    data_[1].view.x += data_[1].view.width;
-
-    data_[2] = data_[0];
-    data_[2].view.y += data_[0].view.height;
-
-    data_[3] = data_[2];
-    data_[3].view.x += data_[3].view.width;
 
     // カメラの設定
     data_[0].camera.distance = 45.0f;
@@ -288,8 +360,9 @@ public:
           is_split_ = check_use_menu->isChecked();
           Button_SetCheck(GetDlgItem(dialog_hwnd,IS_USE_SPLIT_VIEW), is_split_);
         };
-
       menu->AppendChild(L"画面分割", check_use_menu);
+      check_use_menu->reverseCheck();
+      is_split_ = true;
     }
 
     {
@@ -340,7 +413,19 @@ public:
               ifs >> version;
               for ( int i = 0; i < 4; i++ )
               {
-                this_->data_[i].load(ifs);
+                this_->data_[i].load(ifs, this_->back_viewport_, version);
+
+                Button_SetCheck(GetDlgItem(this_->dialog_hwnd, is_use_id[i]), this_->data_[i].is_use_);
+                int id = -1;
+                if ( this_->data_[i].camera_type == ViewData::CameraType::Fix )
+                {
+                  id = is_fix_id[i];
+                }
+                else
+                {
+                  id = is_tracking_id[i];
+                }
+                CheckRadioButton(this_->dialog_hwnd, is_fix_id[i], is_tracking_id[i], id);
               }
             }
           }
@@ -349,7 +434,7 @@ public:
             auto str = funcFileSave(hwnd);
             filesystem::path path = str;
             std::ofstream ofs(path.string());
-            ofs << "001" << std::endl;
+            ofs << "002" << std::endl;
             for ( int i = 0; i < 4; i++ )
             {
               this_->data_[i].save(ofs);
@@ -428,6 +513,7 @@ public:
         };
       menu->AppendChild(L"ウィンドウ表示", form_dialog);
       dialog_hwnd = CreateDialogParamW(g_module, MAKEINTRESOURCE(IDD_FORMVIEW), getHWND(), mainDlgProc, (LPARAM)this);
+      Button_SetCheck(GetDlgItem(dialog_hwnd, IS_USE_SPLIT_VIEW), true);
       UpdateSettingMenu();
     }
 
@@ -482,6 +568,8 @@ public:
             data.pre_position = new_pos;
           }
         }
+        if ( data.is_use_ == false ) return;
+
         // TODO: シェーダに渡されているデータもできれば変えて、再生時も対応できるようにする。
         auto w = DirectX::XMMatrixTranslationFromVector(data.camera.lookat);
         w *= rotate;
@@ -490,7 +578,7 @@ public:
         device_->SetTransform(D3DTS_VIEW, &pos);
         device_->SetTransform(D3DTS_WORLD, &tmp);
 
-        auto v = data.view.getViewport(back_viewport_.MinZ, back_viewport_.MaxZ);
+        auto v = data.view.getViewport(back_viewport_);
         device_->SetViewport(&v);
 
         // アルファブレンド設定
@@ -550,33 +638,19 @@ public:
         D3DVIEWPORT9 viewport = back_viewport_;
         viewport.Width = viewport.Width / 2;
         viewport.Height = viewport.Height / 2;
-        if ( depth_buf[0] == nullptr )
+        if ( ResetDepthBuffer() )
         {
-          device_->GetDepthStencilSurface(&tmp_depth);
-          if ( tmp_depth )
-          {
-            D3DSURFACE_DESC desc;
-            tmp_depth->GetDesc(&desc);
-            for ( auto& i : depth_buf )
-            {
-              device_->CreateDepthStencilSurface(desc.Width, desc.Height, desc.Format, desc.MultiSampleType, desc.MultiSampleQuality,
-                                                 TRUE, &i, nullptr);
-            }
-            ResetDefaultSetting(viewport);
-          }
+          ResetDefaultSetting(viewport);
         }
-        device_->SetDepthStencilSurface(depth_buf[0]);
-        if ( data_[0].is_use_ ) DrawView(data_[0]);
-
-        device_->SetDepthStencilSurface(depth_buf[1]);
-        if ( data_[1].is_use_ ) DrawView(data_[1]);
-
-        device_->SetDepthStencilSurface(depth_buf[2]);
-        if ( data_[2].is_use_ ) DrawView(data_[2]);
+        for ( int i = 0; i < 3; i++ )
+        {
+          device_->SetDepthStencilSurface(depth_buf[i]);
+          DrawView(data_[i]);
+        }
 
         if ( is_camera_right_bottom )
         {
-          viewport = data_[3].view.getViewport(viewport.MinZ, viewport.MaxZ);
+          viewport = data_[3].view.getViewport(back_viewport_);
           device_->SetViewport(&viewport);
         }
         else
@@ -676,7 +750,7 @@ public:
       for ( int i = 0; i < 4; i++ )
       {
         auto& d = data_[i].view;
-        if ( d.x <= pt.x && pt.x <= d.x + d.width * data_[i].view.scale && d.y <= pt.y && pt.y <= d.y + d.height * data_[i].view.scale )
+        if ( d.contains(back_viewport_, pt) )
         {
           bool is_shift = GetAsyncKeyState(VK_SHIFT) < 0;
           bool is_control = GetAsyncKeyState(VK_CONTROL) < 0;
@@ -724,19 +798,16 @@ public:
       case MoveMouseData::Type::ViewMove:
       {
         int dx = pt.x - mouse_data.x;
-        data_[mouse_data.id].view.x += dx;
-        mouse_data.x = pt.x;
-
         int dy = pt.y - mouse_data.y;
+        data_[mouse_data.id].view.move(back_viewport_, dx, dy);
+        mouse_data.x = pt.x;
         mouse_data.y = pt.y;
-        data_[mouse_data.id].view.y += dy;
       }
         break;
       case MoveMouseData::Type::ViewScale:
       {
         int dx = pt.x - mouse_data.x;
-        data_[mouse_data.id].view.scale += dx / 500.0f;
-        data_[mouse_data.id].view.scale = std::max(data_[mouse_data.id].view.scale, 0.1f);
+        data_[mouse_data.id].view.scale(dx / 500.0f);
         mouse_data.x = pt.x;
       }
         break;
@@ -755,7 +826,7 @@ public:
       {
         int dx = pt.x - mouse_data.x;
         int dy = pt.y - mouse_data.y;
-        DirectX::XMVECTOR div = { -(20.0f * data_[mouse_data.id].view.scale) ,(20.0f * data_[mouse_data.id].view.scale) ,1,1 };
+        DirectX::XMVECTOR div = { -(20.0f * data_[mouse_data.id].view.getScale()) ,(20.0f * data_[mouse_data.id].view.getScale()) ,1,1 };
         data_[mouse_data.id].camera.lookat = DirectX::XMVectorAdd(data_[mouse_data.id].camera.lookat, DirectX::XMVectorDivide(DirectX::XMVectorSet(dx, dy, 0, 0), div));
 
         mouse_data.x = pt.x;
@@ -781,6 +852,39 @@ public:
       break;
     default:
       break;
+    }
+  }
+
+  void Reset(D3DPRESENT_PARAMETERS* pPresentationParameters) override
+  {
+    if ( tmp_depth ) tmp_depth->Release();
+    for ( auto& i : depth_buf )
+    {
+      if ( i ) i->Release();
+      i = nullptr;
+    }
+  }
+
+  void PostReset(D3DPRESENT_PARAMETERS* pPresentationParameters, HRESULT& res) override
+  {
+    ResetDepthBuffer();
+  }
+
+  bool ResetDepthBuffer()
+  {
+    if ( depth_buf[0] ) return false;
+
+    device_->GetDepthStencilSurface(&tmp_depth);
+    if ( tmp_depth )
+    {
+      D3DSURFACE_DESC desc;
+      tmp_depth->GetDesc(&desc);
+      for ( auto& i : depth_buf )
+      {
+        device_->CreateDepthStencilSurface(desc.Width, desc.Height, desc.Format, desc.MultiSampleType, desc.MultiSampleQuality,
+                                           TRUE, &i, nullptr);
+      }
+      return true;
     }
   }
 
