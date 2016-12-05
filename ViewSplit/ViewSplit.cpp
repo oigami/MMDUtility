@@ -35,13 +35,13 @@ private:
   float scale_ = 1.0f;
 public:
 
-  Rect(): x_(0), y_(0), width_(0.5f), height_(0.5f) {}
+  Rect() : x_(0), y_(0), width_(0.5f), height_(0.5f) {}
 
   Rect(float x, float y, float width, float height)
     : x_(x),
       y_(y),
       width_(width),
-      height_(height) {}
+      height_(height) { }
 
   void setScale(float scale)
   {
@@ -196,7 +196,7 @@ struct ViewData
 class ViewSplit : public MMDPluginDLL3
 {
 public:
-  explicit ViewSplit(IDirect3DDevice9* device): device_(device) {}
+  explicit ViewSplit(IDirect3DDevice9* device) : device_(device) {}
 
   bool is_split_ = false;
   bool is_camera_right_bottom = false;
@@ -343,6 +343,7 @@ public:
     std::ifstream ifs(path.string());
   }
 
+
   void start() override
   {
     auto utility_dll = mmp::getDLL3Object("MMDUtility");
@@ -358,11 +359,9 @@ public:
         {
           check_use_menu->reverseCheck();
           is_split_ = check_use_menu->isChecked();
-          Button_SetCheck(GetDlgItem(dialog_hwnd,IS_USE_SPLIT_VIEW), is_split_);
+          Button_SetCheck(GetDlgItem(dialog_hwnd, IS_USE_SPLIT_VIEW), is_split_);
         };
       menu->AppendChild(L"画面分割", check_use_menu);
-      check_use_menu->reverseCheck();
-      is_split_ = true;
     }
 
     {
@@ -383,6 +382,9 @@ public:
         if ( this_ == nullptr ) return INT_PTR();
         switch ( msg )
         {
+        case WM_CLOSE:
+          this_->form_dialog_->command({});
+          break;
         case WM_COMMAND:
         {
           if ( LOWORD(wparam) == PARAM_LOAD )
@@ -498,11 +500,12 @@ public:
       };
 
     {
-      auto form_dialog = new control::MenuDelegate(ctrl);
-      form_dialog->SetType(control::IMenu::Type::Command);
-      form_dialog->command = [mainDlgProc,form_dialog, this](const control::IMenu::CommandArgs&)
+      form_dialog_ = new control::MenuCheckBox(ctrl);
+      form_dialog_->SetType(control::IMenu::Type::Command);
+      form_dialog_->command = [mainDlgProc, this](const control::IMenu::CommandArgs&)
         {
-          if ( !IsWindowVisible(dialog_hwnd) )
+          form_dialog_->reverseCheck();
+          if ( form_dialog_->isChecked() )
           {
             ShowWindow(dialog_hwnd, SW_SHOW);
           }
@@ -511,7 +514,7 @@ public:
             ShowWindow(dialog_hwnd, SW_HIDE);
           }
         };
-      menu->AppendChild(L"ウィンドウ表示", form_dialog);
+      menu->AppendChild(L"画面分割設定ウィンドウ", form_dialog_);
       dialog_hwnd = CreateDialogParamW(g_module, MAKEINTRESOURCE(IDD_FORMVIEW), getHWND(), mainDlgProc, (LPARAM)this);
       Button_SetCheck(GetDlgItem(dialog_hwnd, IS_USE_SPLIT_VIEW), true);
       UpdateSettingMenu();
@@ -591,7 +594,7 @@ public:
         device_->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
         DWORD color = 0, back_color;
         int a = (int) (data.alpha_val / 100.0f * 255);
-        color = D3DCOLOR_RGBA(a,a,a,a);
+        color = D3DCOLOR_RGBA(a, a, a, a);
         device_->GetRenderState(D3DRS_BLENDFACTOR, &back_color);
 
         device_->SetRenderState(D3DRS_BLENDFACTOR, color);
@@ -702,7 +705,7 @@ public:
     now_clear = 1;
     IDirect3DSurface9* tmp;
     device_->GetDepthStencilSurface(&tmp);
-    for ( auto& i: depth_buf )
+    for ( auto& i : depth_buf )
     {
       device_->SetDepthStencilSurface(i);
       device_->Clear(Count, pRects, Flags, Color, Z, Stencil);
@@ -892,6 +895,7 @@ public:
   D3DVIEWPORT9 back_viewport_ = { 0 };
   IDirect3DSurface9* tmp_depth = nullptr;
   IDirect3DDevice9* device_;
+  control::MenuCheckBox* form_dialog_;
 };
 
 int version() { return 3; }
