@@ -170,4 +170,4 @@ private:
   IDirect3DDevice9* device_;
 };
 
-void OpenConsole();
+MMD_UTILITY_DLL_FUNC_API void OpenConsole();

@@ -2,6 +2,7 @@
 #include "stdafx.h"
 #include "../MMDUtility/mmdplugin/mmd_plugin.h"
 #include <d3dx9.h>
+#include "../MMDUtility/mmd_utility.h"
 HMODULE g_module;
 
 void OpenConsole()

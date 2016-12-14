@@ -181,7 +181,6 @@ namespace control
     {
     case WM_LBUTTONUP:
     {
-      printf("lbuttonup %d\n", menu_select_id_);
       auto it = menu_.find(menu_select_id_);
       if ( it != menu_.end() )
       {
@@ -226,7 +225,7 @@ void MMDUtility::WndProc(const CWPSTRUCT* param)
   switch ( param->message )
   {
   case WM_COMMAND:
-    printf("%x %d %d %d %d %d\n", param->message, HIWORD(param->lParam),LOWORD(param->lParam),HIWORD(param->wParam), LOWORD(param->wParam));
+    //printf("%x %d %d %d %d %d\n", param->message, HIWORD(param->lParam),LOWORD(param->lParam),HIWORD(param->wParam), LOWORD(param->wParam));
 
   default:
     break;
@@ -255,7 +254,7 @@ int version() { return 3; }
 MMDPluginDLL3* create3(IDirect3DDevice9* device)
 {
 #ifndef NDEBUG
-  OpenConsole();
+  //OpenConsole();
 #endif // NDEBUG
   return new MMDUtility(device);
 }

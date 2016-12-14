@@ -736,7 +736,6 @@ public:
     switch ( param->message )
     {
     case WM_LBUTTONDOWN:
-      printf("%d", param->hwnd);
     default:
       break;
     }
