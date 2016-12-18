@@ -21,12 +21,6 @@ void println(std::ostream& ofs, A a, T ... t)
   println(ofs, t...);
 }
 
-typedef struct
-{
-  float x, y, z, rhw;
-  DWORD diff;
-} D3DVERTEX;
-
 struct Rect
 {
 private:
@@ -267,8 +261,7 @@ public:
     static OPENFILENAME ofn;
     static wchar_t szFile[MAX_PATH];
 
-    std::wstring szPath;
-    szPath = (mmp::getDLLPath(g_module) / L"split_view_setting").wstring();
+    const std::wstring szPath = (mmp::getDLLPath(g_module).parent_path() / L"split_view_setting").wstring();
     if ( ofn.lStructSize == 0 )
     {
       ofn.lStructSize = sizeof(OPENFILENAME);
@@ -285,7 +278,7 @@ public:
     {
       return szFile;
     }
-    else return {};
+    return {};
   }
 
   static std::wstring funcPngSave(HWND hWnd)
@@ -293,10 +286,7 @@ public:
     static OPENFILENAME ofn;
     static wchar_t szFile[MAX_PATH];
 
-    std::wstring szPath;
-    char module_path[MAX_PATH + 1];
-    GetModuleFileNameA(g_module, module_path, MAX_PATH);
-    szPath = (filesystem::path(module_path).parent_path() / L"split_view_setting").wstring();
+    const std::wstring szPath = (mmp::getDLLPath(g_module).parent_path() / L"split_view_setting").wstring();
     if ( ofn.lStructSize == 0 )
     {
       ofn.lStructSize = sizeof(OPENFILENAME);
@@ -313,27 +303,27 @@ public:
     {
       return szFile;
     }
-    else return {};
+    return {};
   }
 
   void UpdateSettingMenu()
   {
-    char module_path[MAX_PATH];
-    GetModuleFileNameA(g_module, module_path, MAX_PATH);
-    auto path = filesystem::path(module_path).parent_path() / L"split_view_setting";
-    if ( filesystem::exists(path) == false )
-    {
-      filesystem::create_directories(path);
-    }
-    filesystem::directory_iterator it(path), last;
+    // 既存のファイル一覧を除去
     auto menu = GetDlgItem(dialog_hwnd, LOAD_MENU);
     int cnt = static_cast<int>(SendMessage(menu, CB_GETCOUNT, 0, 0));
     for ( int i = 0; i < cnt; i++ )
     {
       SendMessage(menu, CB_DELETESTRING, 0, 0);
     }
+
+    // 新しくファイル一覧を追加
+    const auto path = mmp::getDLLPath(g_module).parent_path() / L"split_view_setting";
+    if ( filesystem::exists(path) == false )
+    {
+      filesystem::create_directories(path);
+    }
     SendMessage(menu, CB_ADDSTRING, 0, (LPARAM) L"デフォルト");
-    for ( ; it != last; it++ )
+    for ( filesystem::directory_iterator it(path), last; it != last; ++it )
     {
       SendMessage(menu, CB_ADDSTRING, 0, (LPARAM) it->path().filename().c_str());
     }
@@ -374,9 +364,9 @@ public:
     auto mainDlgProc = [](HWND hwnd, UINT msg, WPARAM wparam, LPARAM lParam)
       {
         static ViewSplit* this_;
-        static bool is_move = false;
         if ( msg == WM_INITDIALOG ) this_ = (ViewSplit*) lParam;
         if ( this_ == nullptr ) return INT_PTR();
+
         switch ( msg )
         {
         case WM_CLOSE:
@@ -436,17 +426,12 @@ public:
           this_->is_split_ = use;
         }
           break;
-        case WM_MOVE:
-          is_move = true;
-          break;
-
         case WM_HSCROLL:
           for ( int i = 0; i < 4; i++ )
           {
             this_->data_[i].alpha_val = 100 - static_cast<int>(SendDlgItemMessage(hwnd, alpha_val[i], TBM_GETPOS, 0, 0));
           }
           break;
-
         default:
           break;
         }
@@ -603,7 +588,11 @@ public:
         {
           device_->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
           device_->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
-#define FVF_VERTEX   (D3DFVF_XYZRHW | D3DFVF_DIFFUSE)
+          struct D3DVERTEX
+          {
+            float x, y, z, rhw;
+            DWORD diff;
+          };
           D3DVERTEX pt[] = {
             { static_cast<float>(v.X), static_cast<float>(v.Y), 0.0001f, 1.0f, 0x30FFFF00 } ,
             { static_cast<float>(v.X + v.Width),static_cast<float>(v.Y), 0.0001f , 1.0f, 0x30FFFF00 } ,
@@ -613,7 +602,8 @@ public:
           };
           DWORD fvf;
           device_->GetFVF(&fvf);
-          device_->SetFVF(FVF_VERTEX);
+
+          device_->SetFVF(D3DFVF_XYZRHW | D3DFVF_DIFFUSE);
 
           IDirect3DVertexBuffer9* buffer;
           UINT offset, stride;
