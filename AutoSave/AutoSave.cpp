@@ -434,19 +434,18 @@ public:
   std::chrono::system_clock::time_point start_time = std::chrono::system_clock::now();
   std::chrono::minutes interval_time;
 
-  static std::size_t fileCountNative(const filesystem::path& path)
+  static int fileCountNative(const filesystem::path& path)
   {
-    WIN32_FIND_DATA wfd = {};
+    WIN32_FIND_DATA wfd;
     HANDLE handle = FindFirstFile(path.c_str(), &wfd);
     if ( handle == INVALID_HANDLE_VALUE ) return 0;
 
-    std::size_t result = 0;
+    int result = 0;
     do
     {
-      if ( lstrcmpW(wfd.cFileName, L".") != 0 && lstrcmpW(wfd.cFileName, L"..") != 0 )
+      if ( wfd.cFileName[0] != '.' || wfd.cFileName[1] != '.' || wfd.cFileName[2] != '\0' )
       {
         ++result;
-        //if ( (wfd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) ) result += fileCountNative(src + ('\\') + path);
       }
     }
     while ( FindNextFile(handle, &wfd) );
