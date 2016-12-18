@@ -14,13 +14,6 @@ extern HMODULE g_module;
 #include <experimental/filesystem>
 namespace filesystem = std::experimental::filesystem;
 
-static filesystem::path getDLlParentPath()
-{
-  char module_path[MAX_PATH + 1];
-  GetModuleFileNameA(g_module, module_path, MAX_PATH);
-  return filesystem::path(module_path).parent_path();
-}
-
 template<class T>
 void println(std::ostream& ofs, T t)
 {
@@ -34,17 +27,6 @@ void println(std::ostream& ofs, A a, T ... t)
   println(ofs, t...);
 }
 
-
-class IUndoRedo
-{
-  virtual IUndoRedo* next() = 0;
-  virtual void load() = 0;
-  virtual void save() = 0;
-};
-
-using namespace mmp;
-
-
 class InterpolationCurvePalette : public MMDPluginDLL3
 {
 public:
@@ -53,10 +35,7 @@ public:
     POINT xy1, xy2;
   };
 
-  std::array<ICData, 10> ic_data_;
-  bool use_shortcut_;
-
-  InterpolationCurvePalette() {}
+  InterpolationCurvePalette(): use_shortcut_(false), palette_menu_(nullptr), window_handle_(nullptr) {}
 
   const char* getPluginTitle() const override { return "MMDUtility_Interpolation_Curve_Palette"; }
 
@@ -68,7 +47,7 @@ public:
 
   void loadData()
   {
-    std::ifstream ifs(getDLlParentPath() / "interpolationCuveData.txt");
+    std::ifstream ifs(mmp::getDLLPath(g_module).parent_path() / "interpolationCuveData.txt");
     if ( ifs.is_open() == false )
     {
       ic_data_[0].xy1 = { 64, 127 };
@@ -109,7 +88,7 @@ public:
 
   void saveData()
   {
-    std::ofstream ofs(getDLlParentPath() / "interpolationCuveData.txt");
+    std::ofstream ofs(mmp::getDLLPath(g_module).parent_path() / "interpolationCuveData.txt");
     println(ofs, "001");
     for ( auto& i : ic_data_ )
     {
@@ -121,7 +100,7 @@ public:
 
   static unsigned char* getMMDICPointer()
   {
-    auto p = (unsigned char*) getMMDMainData();
+    auto p = (unsigned char*) mmp::getMMDMainData();
     p += 0x9E4D5;
     if ( IsBadReadPtr(p, sizeof(char[4])) != 0 || IsBadWritePtr(p, sizeof(char[4])) != 0 )
     {
@@ -141,7 +120,6 @@ public:
   {
     MMDUtility* utility = dynamic_cast<MMDUtility*>(mmp::getDLL3Object("MMDUtility"));
     if ( utility == nullptr ) return;
-
 
     auto menu = utility->getUitilityMenu();
     auto ctrl = utility->getControl();
@@ -177,7 +155,6 @@ public:
         switch ( msg )
         {
         case WM_CLOSE:
-
           ShowWindow(hwnd, SW_HIDE);
           this_->palette_menu_->check(false);
           break;
@@ -189,7 +166,7 @@ public:
             this_->useShortcut(BST_CHECKED == Button_GetCheck(GetDlgItem(hwnd, IDC_CHECK1)));
             return 0;
           }
-          if ( LOWORD(wparam) == IDC_BUTTON11 )
+          else if ( LOWORD(wparam) == IDC_BUTTON11 )
           {
             auto dlgProc = [](HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) -> INT_PTR
               {
@@ -200,8 +177,6 @@ public:
                 static InterpolationCurvePalette* this_;
                 if ( msg == WM_INITDIALOG ) this_ = (InterpolationCurvePalette*) lparam;
                 if ( this_ == nullptr ) return 0;
-
-                auto mmd_data = getMMDMainData();
 
                 static int id = -1;
                 switch ( msg )
@@ -228,8 +203,9 @@ public:
                 return 0;
               };
             CreateDialogParamW(g_module, MAKEINTRESOURCE(IC_SETTING_WINDOW_ID), getHWND(), dlgProc, (LPARAM) this_);
-            break;
+            return 0;
           }
+
           for ( int i = 0; i < 10; i++ )
           {
             if ( button_id[i] == LOWORD(wparam) )
@@ -305,6 +281,10 @@ public:
   }
 
 private:
+
+  std::array<ICData, 10> ic_data_;
+  bool use_shortcut_;
+
   control::MenuCheckBox* palette_menu_;
   HWND window_handle_;
 };
