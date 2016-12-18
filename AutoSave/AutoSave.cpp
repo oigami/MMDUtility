@@ -436,8 +436,8 @@ public:
 
   static int fileCountNative(const filesystem::path& path)
   {
-    WIN32_FIND_DATA wfd;
-    HANDLE handle = FindFirstFile(path.c_str(), &wfd);
+    WIN32_FIND_DATAW wfd;
+    HANDLE handle = FindFirstFileW(path.c_str(), &wfd);
     if ( handle == INVALID_HANDLE_VALUE ) return 0;
 
     int result = 0;
@@ -448,7 +448,7 @@ public:
         ++result;
       }
     }
-    while ( FindNextFile(handle, &wfd) );
+    while ( FindNextFileW(handle, &wfd) );
     FindClose(handle);
 
     return result;

@@ -826,7 +826,10 @@ namespace mmp
     int __unknown90;
     int pre_left_frame;
     int now_frame;
-    int __unknown100[163785];
+    int __unknown100[160800];
+    char __unknown101;
+    unsigned char edit_interpolation_curve[4]; // x1 y1 x2 y2
+    int __unknown103[2983];
     char is_camera_select;
     char is_model_bone_select[127];
     int __unknown110[318];
@@ -837,7 +840,7 @@ namespace mmp
 
 
   static_assert(5200 == offsetof(MMDMainData, now_frame), "");
-
+  static_assert(648405 == offsetof(MMDMainData, edit_interpolation_curve), "");
   static_assert(660344 == offsetof(MMDMainData, is_camera_select), "");
   static_assert(661752 == offsetof(MMDMainData, length), "");
 

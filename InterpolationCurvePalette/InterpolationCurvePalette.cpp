@@ -97,20 +97,6 @@ public:
     println(ofs, use_shortcut_ ? 1 : 0);
   }
 
-
-  static unsigned char* getMMDICPointer()
-  {
-    auto p = (unsigned char*) mmp::getMMDMainData();
-    p += 0x9E4D5;
-    if ( IsBadReadPtr(p, sizeof(char[4])) != 0 || IsBadWritePtr(p, sizeof(char[4])) != 0 )
-    {
-      std::wstring error = L"内部エラー\n補間曲線の読み込みに失敗しました\np=" + std::to_wstring((INT_PTR) p);
-      MessageBoxW(nullptr, error.c_str(), L"エラー", MB_OK);
-      return nullptr;
-    }
-    return p;
-  }
-
   void stop() override
   {
     saveData();
@@ -238,7 +224,8 @@ public:
       POINT{ data.xy1.x + 8, rect.bottom - (127 - data.xy1.y) },
       { data.xy2.x + 8, rect.bottom - (127 - data.xy2.y) } };
 
-    auto p = getMMDICPointer();
+    auto p = mmp::getMMDMainData()->edit_interpolation_curve;
+
     if ( p == nullptr ) return;
     p[2] = 127;
     p[3] = 127;
@@ -260,7 +247,7 @@ public:
   void recvIC(int id)
   {
     if ( id == -1 ) return;
-    auto p = getMMDICPointer();
+    auto p = mmp::getMMDMainData()->edit_interpolation_curve;
     if ( p == nullptr ) return;
     ic_data_[id].xy1.x = p[0];
     ic_data_[id].xy1.y = p[1];
