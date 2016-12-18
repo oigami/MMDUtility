@@ -399,51 +399,12 @@ public:
             else
             {
               SendMessage(menu, CB_GETLBTEXT, select, (LPARAM) str);
-              char module_path[MAX_PATH + 1];
-              GetModuleFileNameA(g_module, module_path, MAX_PATH);
-              filesystem::path path = filesystem::path(module_path).parent_path() / L"split_view_setting";
-              if ( filesystem::exists(path) == false )
-              {
-                filesystem::create_directories(path);
-              }
-              path /= str;
-              std::ifstream ifs(path.string());
-              int version;
-              ifs >> version;
-              for ( int i = 0; i < 4; i++ )
-              {
-                this_->data_[i].load(ifs, this_->back_viewport_, version);
-
-                Button_SetCheck(GetDlgItem(this_->dialog_hwnd, is_use_id[i]), this_->data_[i].is_use_);
-                int id = -1;
-                if ( this_->data_[i].camera_type == ViewData::CameraType::Fix )
-                {
-                  id = is_fix_id[i];
-                }
-                else
-                {
-                  id = is_tracking_id[i];
-                }
-                CheckRadioButton(this_->dialog_hwnd, is_fix_id[i], is_tracking_id[i], id);
-              }
+              this_->loadViewData(str);
             }
           }
           else if ( LOWORD(wparam) == PARAM_SAVE )
           {
-            auto str = funcFileSave(hwnd);
-            filesystem::path path = str;
-            std::ofstream ofs(path.string());
-            ofs << "002" << std::endl;
-            for ( int i = 0; i < 4; i++ )
-            {
-              this_->data_[i].save(ofs);
-              ofs << std::endl;
-            }
-
-            auto menu = GetDlgItem(hwnd, LOAD_MENU);
-            int select = static_cast<int>(SendMessage(menu, CB_GETCURSEL, 0L, 0L));
-            SendMessage(menu, CB_GETLBTEXT, select, (LPARAM) str.c_str());
-            this_->UpdateSettingMenu();
+            this_->saveViewData(hwnd);
           }
           //if ( HIWORD(wparam) == CBN_SELENDOK && LOWORD(wparam) == model_select_id )
           {
@@ -473,16 +434,12 @@ public:
           bool use = Button_GetCheck(GetDlgItem(hwnd, IS_USE_SPLIT_VIEW)) == BST_CHECKED;
           this_->check_use_menu->check(use);
           this_->is_split_ = use;
-          break;
         }
+          break;
         case WM_MOVE:
           is_move = true;
           break;
-        case WM_NCLBUTTONUP:
-          if ( is_move )
-          {
-            InvalidateRect(hwnd, nullptr, true);
-          }
+
         case WM_HSCROLL:
           for ( int i = 0; i < 4; i++ )
           {
@@ -519,6 +476,49 @@ public:
     menu->AppendSeparator();
     menu->Release();
     DrawMenuBar(getHWND());
+  }
+
+  void loadViewData(wchar_t* str)
+  {
+    char module_path[MAX_PATH + 1];
+    GetModuleFileNameA(g_module, module_path, MAX_PATH);
+    filesystem::path path = filesystem::path(module_path).parent_path() / L"split_view_setting";
+    if ( filesystem::exists(path) == false )
+    {
+      filesystem::create_directories(path);
+    }
+    path /= str;
+    std::ifstream ifs(path.string());
+    int version;
+    ifs >> version;
+    for ( int i = 0; i < 4; i++ )
+    {
+      data_[i].load(ifs, back_viewport_, version);
+
+      Button_SetCheck(GetDlgItem(dialog_hwnd, is_use_id[i]), data_[i].is_use_);
+
+      int id = data_[i].camera_type == ViewData::CameraType::Fix ? is_fix_id[i] : is_tracking_id[i];
+
+      CheckRadioButton(dialog_hwnd, is_fix_id[i], is_tracking_id[i], id);
+    }
+  }
+
+  void saveViewData(const HWND& hwnd)
+  {
+    auto str = funcFileSave(hwnd);
+    filesystem::path path = str;
+    std::ofstream ofs(path.string());
+    ofs << "002" << std::endl;
+    for ( int i = 0; i < 4; i++ )
+    {
+      data_[i].save(ofs);
+      ofs << std::endl;
+    }
+
+    auto menu = GetDlgItem(hwnd, LOAD_MENU);
+    int select = static_cast<int>(SendMessage(menu, CB_GETCURSEL, 0L, 0L));
+    SendMessage(menu, CB_GETLBTEXT, select, (LPARAM) str.c_str());
+    UpdateSettingMenu();
   }
 
   static DirectX::XMMATRIX toMatrix(D3DMATRIX mat)
