@@ -107,15 +107,7 @@ namespace control
 
   void IMenu::AppendSeparator()
   {
-    MENUITEMINFOW mii;
-
-    mii.cbSize = sizeof(MENUITEMINFOW);
-    mii.fMask = MIIM_ID | MIIM_TYPE;
-    mii.wID = 0;
-    mii.fType = MFT_SEPARATOR;
-    mii.hSubMenu = nullptr;
-
-    InsertMenuItemW(pimpl->menu_handle_, 0, FALSE, &mii);
+    InsertMenuW(pimpl->menu_handle_, -1, MF_BYPOSITION | MF_SEPARATOR, 0, nullptr);
   }
 
   void IMenu::AppendChild(LPWSTR lpszItemName, IMenu* hmenuSub)
@@ -240,7 +232,7 @@ void MMDUtility::MsgProc(int code, const MSG* param)
 }
 
 std::pair<bool, LRESULT> MMDUtility::WndProc(HWND, UINT, WPARAM, LPARAM) { return { false,0 }; }
-
+#ifndef NDEBUG
 void OpenConsole()
 {
   FILE *in, *out;
@@ -248,6 +240,7 @@ void OpenConsole()
   freopen_s(&out, "CONOUT$", "w", stdout);//CONOUT$
   freopen_s(&in, "CONIN$", "r", stdin);
 }
+#endif // NDEBUG
 
 int version() { return 3; }
 

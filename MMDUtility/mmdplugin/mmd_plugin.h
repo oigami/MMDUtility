@@ -2,6 +2,8 @@
 #include <d3d9.h>
 #include <memory>
 #include <string>
+#include <experimental/filesystem>
+namespace filesystem = std::experimental::filesystem;
 #define MMD_PLUGIN_API __declspec(dllexport)
 #ifdef MAKE_MMD_PLUGIN
 # define MMD_DLL_FUNC_API __declspec(dllexport)
@@ -609,14 +611,29 @@ namespace mmp
       virtual void add_prev(std::shared_ptr<IFuncBinderImpl> prev) = 0;
     };
 
-    template<class T>
-    struct FuncBinderImpl;
 
-    template<class Result, class... Args>
-    struct FuncBinderImpl<Result(WINAPI*)(Args ...)> : IFuncBinderImpl, std::enable_shared_from_this<FuncBinderImpl<Result(WINAPI*)(Args ...)>>
+    namespace get_call_type
     {
-      using Func = Result(WINAPI*)(Args ...);
+      template<typename R, typename... ArgTypes>
+      static auto args(R (__vectorcall*)(ArgTypes ...)) -> void(*)(ArgTypes ...);
 
+      template<typename R, typename... ArgTypes>
+      static auto args(R (__stdcall*)(ArgTypes ...)) -> void(*)(ArgTypes ...);
+
+      template<typename R, typename... ArgTypes>
+      static auto args(R (__cdecl*)(ArgTypes ...)) -> void(*)(ArgTypes ...);
+
+      template<typename R, typename... ArgTypes>
+      static auto args(R (__thiscall*)(ArgTypes ...)) -> void(*)(ArgTypes ...);
+
+      template<class F>
+      using getArgTypeList = decltype(args(std::declval<F>()));
+    }
+
+
+    template<class Result, class Func, class... Args>
+    struct FuncBinderImpl : IFuncBinderImpl, std::enable_shared_from_this<FuncBinderImpl<Result, Func, Args...>>
+    {
       FuncBinderImpl(std::string module_name, std::string func_name, Func new_func)
         : module_name_(module_name), func_name_(func_name), new_func_(new_func)
       {
@@ -649,54 +666,205 @@ namespace mmp
         reset();
       }
 
-      std::shared_ptr<FuncBinderImpl<Func>> prev_;
+      std::shared_ptr<FuncBinderImpl<Result, Func, Args...>> prev_;
+    };
+
+    template<class Func, class F>
+    class WinAPIHookerImpl;
+
+    template<class Func, class...Args>
+    class WinAPIHookerImpl<Func, void(*)(Args ...)>
+    {
+    public:
+      WinAPIHookerImpl() = default;
+      WinAPIHookerImpl(const WinAPIHookerImpl&) = delete;
+
+      ~WinAPIHookerImpl()
+      {
+        reset();
+      }
+
+      using Result = std::result_of_t<Func(Args ...)>;
+
+      bool hook(const char* module_name, const char* func_name, Func new_func)
+      {
+        is_init = true;
+        impl_ = std::make_shared<detail::FuncBinderImpl<Result, Func, Args...>>(module_name, func_name, new_func);
+        detail::IFuncBinderImpl::addPrev(impl_, impl_->oridinal_func_, new_func);
+        return true;
+      }
+
+      void reset()
+      {
+        is_init = false;
+        if ( is_init == false || !impl_ ) return;
+        detail::IFuncBinderImpl::deleteFunc(impl_->new_func_);
+        impl_->reset();
+      }
+
+      Result operator()(Args ... args) { return (*impl_)(args...); }
+
+    private:
+      bool is_init = true;
+      std::shared_ptr<detail::FuncBinderImpl<Result, Func, Args...>> impl_;
     };
   }
 
   template<class T>
-  class WinAPIHooker;
+  using WinAPIHooker = detail::WinAPIHookerImpl<T, detail::get_call_type::getArgTypeList<T>>;
+}
 
-  template<class Result, class... Args>
-  class WinAPIHooker<Result(WINAPI*)(Args ...)>
+namespace mmp
+{
+  constexpr float eps = 1e-7f;
+
+  inline bool compare(float a, float b)
   {
-  public:
-    WinAPIHooker() = default;
-    WinAPIHooker(const WinAPIHooker&) = delete;
+    return a - eps <= b && b <= a + eps;
+  }
 
-    ~WinAPIHooker()
+  struct Float3
+  {
+    float x, y, z;
+
+    bool operator==(const Float3& o) const
     {
-      reset();
+      return compare(x, o.x) && compare(y, o.y) && compare(z, o.z);
     }
 
-    using Func = Result(WINAPI*)(Args ...);
-
-    bool hook(const char* module_name, const char* func_name, Func new_func)
+    bool operator!=(const Float3& o) const
     {
-      is_init = true;
-      impl_ = std::make_shared<detail::FuncBinderImpl<Func>>(module_name, func_name, new_func);
-      detail::IFuncBinderImpl::addPrev(impl_, impl_->oridinal_func_, new_func);
-      return true;
+      return !(*this == o);
     }
-
-    void reset()
-    {
-      is_init = false;
-      if ( is_init == false || !impl_ ) return;
-      detail::IFuncBinderImpl::deleteFunc(impl_->new_func_);
-      impl_->reset();
-    }
-
-    Result operator()(Args ... args) { return (*impl_)(args...); }
-
-  private:
-    bool is_init = true;
-    std::shared_ptr<detail::FuncBinderImpl<Func>> impl_;
   };
+
+  struct CameraKeyFrameData
+  {
+    int frame_no;
+    int pre_index;
+    int next_index; // 次のキーフレームがあるときに0以外になる
+    float length;
+    Float3 xyz;
+    Float3 rxyz;
+    char hokan1_x[6]; // x, y, z, 回転, 距離, 視野角
+    char hokan1_y[6];
+    char hokan2_x[6];
+    char hokan2_y[6];
+    int is_perspective;
+    int view_angle;
+    int is_selected; // 1で選択している。0で選択していない
+    int __unknown2[2]; // looking_model_index, looking_bone_index
+  };
+
+  struct MMDMainData
+  {
+    int __unknown10[2];
+    int mouse_x, mouse_y;
+    int pre_mouse_x, pre_mouse_y;
+    int key_up;
+    int key_down;
+    int key_left;
+    int key_right;
+    int key_shift; // keyは0から3までの数値を取る。押している間は3になる。
+    int key_space;
+    int key_f9;
+    int key_x_or_f11; // f11の場合は2になる
+    int key_z;
+    int key_c;
+    int key_v;
+    int key_d;
+    int key_a;
+    int key_b;
+    int key_g;
+    int key_s;
+    int key_i;
+    int key_h;
+    int key_k;
+    int key_p;
+    int key_u;
+    int key_j;
+    int key_f;
+    int key_r;
+    int key_l;
+    int key_close_bracket;
+    int key_backslash;
+    int key_tab;
+    int __unknown20[14];
+    int key_enter;
+    int key_ctrl;
+    int key_alt;
+    int __unknown30;
+    void* __unknown_pointer;
+    int __unknown40[155];
+    Float3 rxyz;
+    int __unknown49[2];
+    float counter_f;
+    int counter;
+    int __unknown50[3];
+    Float3 xyz;
+    int __unknown60[22];
+    CameraKeyFrameData (&camera_key_frame)[10000];
+    void* __unknown_pointer20[258];
+    void* __unknown_pointer30[255]; // 起動時nullモデルを読み込むと順番にポインタが入る
+    int select_model;
+
+    enum class SelectBoneType : int
+    {
+      Select,
+      Box,
+      Camera,
+      Rotate,
+      Move
+    };
+
+    SelectBoneType select_bone_type; // 0:選択、1:BOX選択、2:カメラモード、3:回転、4:移動
+    int __unknown70[4];
+    float __unknown71;
+    int mouse_over_move; // xyz回転(9,10,11)、xyz移動(12,13,14)
+    int __unknown80[17];
+    int left_frame;
+    int __unknown90;
+    int pre_left_frame;
+    int now_frame;
+    int __unknown100[163785];
+    char is_camera_select;
+    char is_model_bone_select[127];
+    int __unknown110[318];
+    int output_size_x;
+    int output_size_y;
+    float length;
+  };
+
+
+  static_assert(5200 == offsetof(MMDMainData, now_frame), "");
+
+  static_assert(660344 == offsetof(MMDMainData, is_camera_select), "");
+  static_assert(661752 == offsetof(MMDMainData, length), "");
+
+  inline MMDMainData* getMMDMainData()
+  {
+    auto pointer = (BYTE**) ((BYTE*) GetModuleHandleW(nullptr) + 0x1445F8);
+    if ( IsBadReadPtr(pointer, sizeof(INT_PTR)) != 0 )
+    {
+      std::wstring error = L"内部エラー\nポインタの読み込みに失敗しました\npointer=" + std::to_wstring((INT_PTR) pointer);
+      MessageBoxW(nullptr, error.c_str(), L"エラー", MB_OK);
+      return nullptr;
+    }
+    return (MMDMainData*) *pointer;
+  }
 }
 
 namespace mmp
 {
   MMD_PLUGIN_API MMDPluginDLL3* getDLL3Object(const char* dll_title);
+
+
+  inline filesystem::path getDLLPath(HMODULE module)
+  {
+    wchar_t module_path[MAX_PATH + 1];
+    GetModuleFileNameW(module, module_path, MAX_PATH);
+    return module_path;
+  }
 }
 
 extern "C"

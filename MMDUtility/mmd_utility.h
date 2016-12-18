@@ -171,3 +171,7 @@ private:
 };
 
 MMD_UTILITY_DLL_FUNC_API void OpenConsole();
+#ifdef NDEBUG
+//#define OpenConsole() void(0)
+
+#endif // !NDEBUG

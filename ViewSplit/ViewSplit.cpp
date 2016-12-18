@@ -268,9 +268,7 @@ public:
     static wchar_t szFile[MAX_PATH];
 
     std::wstring szPath;
-    char module_path[MAX_PATH + 1];
-    GetModuleFileNameA(g_module, module_path, MAX_PATH);
-    szPath = (filesystem::path(module_path).parent_path() / L"split_view_setting").wstring();
+    szPath = (mmp::getDLLPath(g_module) / L"split_view_setting").wstring();
     if ( ofn.lStructSize == 0 )
     {
       ofn.lStructSize = sizeof(OPENFILENAME);
@@ -519,9 +517,9 @@ public:
       Button_SetCheck(GetDlgItem(dialog_hwnd, IS_USE_SPLIT_VIEW), true);
       UpdateSettingMenu();
     }
-
     menu->AppendSeparator();
     menu->Release();
+    DrawMenuBar(getHWND());
   }
 
   static DirectX::XMMATRIX toMatrix(D3DMATRIX mat)
