@@ -212,12 +212,12 @@ public:
 
     enum class Type
     {
+      Unkown,
       ViewMove,
       ViewScale,
       CameraRotate,
       CameraXYMove,
       CameraDistanceMove,
-      Unkown,
     } type = Type::Unkown;
 
     int id = -1;
@@ -728,33 +728,18 @@ public:
         auto& d = data_[i].view;
         if ( d.contains(back_viewport_, pt) )
         {
-          bool is_shift = GetAsyncKeyState(VK_SHIFT) < 0;
-          bool is_control = GetAsyncKeyState(VK_CONTROL) < 0;
-          bool is_alt = GetAsyncKeyState(VK_MENU) < 0;
-          if ( is_alt && is_control && is_shift )
-          {
-            mouse_data.type = MoveMouseData::Type::CameraDistanceMove;
-          }
-          else if ( is_alt && is_shift )
-          {
-            mouse_data.type = MoveMouseData::Type::CameraXYMove;
-          }
-          else if ( is_control && is_shift )
-          {
-            mouse_data.type = MoveMouseData::Type::ViewScale;
-          }
-          else if ( is_control )
-          {
-            mouse_data.type = MoveMouseData::Type::ViewMove;
-          }
-          else if ( is_alt )
-          {
-            mouse_data.type = MoveMouseData::Type::CameraRotate;
-          }
-          else
-          {
-            mouse_data.type = MoveMouseData::Type::Unkown;
-          }
+          unsigned char bit = 0;
+          bit |= (GetAsyncKeyState(VK_SHIFT) < 0) << 0;
+          bit |= (GetAsyncKeyState(VK_CONTROL) < 0) << 1;
+          bit |= (GetAsyncKeyState(VK_MENU) < 0) << 2;
+          MoveMouseData::Type type[8] = { MoveMouseData::Type::Unkown };
+          type[0b111] = MoveMouseData::Type::CameraDistanceMove;
+          type[0b101] = MoveMouseData::Type::CameraXYMove;
+          type[0b011] = MoveMouseData::Type::ViewScale;
+          type[0b010] = MoveMouseData::Type::ViewMove;
+          type[0b100] = MoveMouseData::Type::CameraRotate;
+          mouse_data.type = type[bit];
+
           mouse_data.id = i;
           mouse_data.x = pt.x;
           mouse_data.y = pt.y;
