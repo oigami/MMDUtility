@@ -206,13 +206,13 @@ public:
 
     enum class Type
     {
-      Unkown,
+      Unknown,
       ViewMove,
       ViewScale,
       CameraRotate,
       CameraXYMove,
       CameraDistanceMove,
-    } type = Type::Unkown;
+    } type = Type::Unknown;
 
     int id = -1;
   } mouse_data;
@@ -536,7 +536,7 @@ public:
     auto DrawView = [=](ViewData& data)
       {
         auto rotate = DirectX::XMMatrixRotationX(data.camera.rotate.y) * DirectX::XMMatrixRotationY(data.camera.rotate.x);
-        if ( data.camera_type == ViewData::CameraType::ModelTracking && this->mouse_data.type == MoveMouseData::Type::Unkown )
+        if ( data.camera_type == ViewData::CameraType::ModelTracking && this->mouse_data.type == MoveMouseData::Type::Unknown )
         {
           {
             auto model_selector = GetDlgItem(getHWND(), model_select_id);
@@ -722,7 +722,7 @@ public:
           bit |= (GetAsyncKeyState(VK_SHIFT) < 0) << 0;
           bit |= (GetAsyncKeyState(VK_CONTROL) < 0) << 1;
           bit |= (GetAsyncKeyState(VK_MENU) < 0) << 2;
-          MoveMouseData::Type type[8] = { MoveMouseData::Type::Unkown };
+          MoveMouseData::Type type[8] = { MoveMouseData::Type::Unknown };
           type[0b111] = MoveMouseData::Type::CameraDistanceMove;
           type[0b101] = MoveMouseData::Type::CameraXYMove;
           type[0b011] = MoveMouseData::Type::ViewScale;
@@ -798,7 +798,7 @@ public:
     case WM_LBUTTONUP:
     {
       mouse_data.id = -1;
-      mouse_data.type = MoveMouseData::Type::Unkown;
+      mouse_data.type = MoveMouseData::Type::Unknown;
     }
       break;
     default:
