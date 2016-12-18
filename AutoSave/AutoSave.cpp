@@ -419,9 +419,8 @@ struct PMMFile
 
   std::vector<SelectorChoiceSelection> selector_choice_selection; // [model_count]
 };
-
-
 #pragma pack(pop)
+
 namespace
 {
   std::atomic<bool> is_saving;
@@ -608,7 +607,7 @@ namespace
 
 int version() { return 3; }
 
-MMDPluginDLL3* create3(IDirect3DDevice9* device)
+MMDPluginDLL3* create3(IDirect3DDevice9*)
 {
   f_write.hook("MSVCR90.DLL", "_write", MyWrite);
   f_wsopen_s.hook("MSVCR90.DLL", "_wsopen_s", Mywsopen_s);

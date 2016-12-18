@@ -107,7 +107,7 @@ namespace control
 
   void IMenu::AppendSeparator()
   {
-    InsertMenuW(pimpl->menu_handle_, -1, MF_BYPOSITION | MF_SEPARATOR, 0, nullptr);
+    InsertMenuW(pimpl->menu_handle_, 0xffffffff, MF_BYPOSITION | MF_SEPARATOR, 0, nullptr);
   }
 
   void IMenu::AppendChild(LPWSTR lpszItemName, IMenu* hmenuSub)

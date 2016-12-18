@@ -5,14 +5,6 @@
 #include "../MMDUtility/mmd_utility.h"
 HMODULE g_module;
 
-void OpenConsole()
-{
-  FILE *in, *out;
-  AllocConsole();
-  freopen_s(&out, "CONOUT$", "w", stdout);//CONOUT$
-  freopen_s(&in, "CONIN$", "r", stdin);
-}
-
 mmp::WinAPIHooker<decltype(D3DXCreateEffectFromFileA)*> a;
 
 HRESULT WINAPI
