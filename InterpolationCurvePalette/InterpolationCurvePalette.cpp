@@ -299,7 +299,7 @@ public:
     {
       if ( (lParam & 0x80000000) == 0 )
       {
-        sendIC(wParam - VK_F1);
+        sendIC((int)wParam - VK_F1);
       }
     }
   }

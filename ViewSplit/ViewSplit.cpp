@@ -89,19 +89,19 @@ public:
 
   int ax(const D3DVIEWPORT9& viewport) const
   {
-    return viewport.X + x_ * viewport.Width;
+    return static_cast<int>(viewport.X + x_ * viewport.Width);
   }
 
   int ay(const D3DVIEWPORT9& viewport) const
   {
-    return viewport.Y + y_ * viewport.Height;
+    return static_cast<int>(viewport.Y + y_ * viewport.Height);
   }
 
 
   int width(const D3DVIEWPORT9& viewport) const
   {
     int sx = ax(viewport);
-    int res = width_ * viewport.Width * scale_;
+    int res = static_cast<int>(width_ * viewport.Width * scale_);
     if ( sx < 0 ) res += sx;
     return res;
   }
@@ -109,7 +109,7 @@ public:
   int height(const D3DVIEWPORT9& viewport) const
   {
     int sy = ay(viewport);
-    int res = height_ * viewport.Height * scale_;
+    int res = static_cast<int>(height_ * viewport.Height * scale_);
     if ( sy < 0 ) res += sy;
     return res;
   }
@@ -145,8 +145,9 @@ public:
 
 struct ViewData
 {
-  bool is_use_;
+  DirectX::XMVECTOR pre_position;
   Rect view;
+  bool is_use_;
   int alpha_val = 100;
 
   struct Camera
@@ -162,7 +163,6 @@ struct ViewData
     ModelTracking,
   } camera_type;
 
-  DirectX::XMVECTOR pre_position;
 
   void save(std::ofstream& ofs)
   {
@@ -229,7 +229,7 @@ public:
   static constexpr int is_tracking_id[] = { LU_IS_TRACKING, RU_IS_TRACKING, LB_IS_TRACKING, RB_IS_TRACKING };
   static constexpr int model_select_id = 436;
 
-  void ResetDefaultSetting(D3DVIEWPORT9 viewport)
+  void ResetDefaultSetting(D3DVIEWPORT9)
   {
     for ( int i = 0; i < 4; i++ )
     {
@@ -319,7 +319,6 @@ public:
   void UpdateSettingMenu()
   {
     char module_path[MAX_PATH];
-    wchar_t stritem[MAX_PATH * 2];
     GetModuleFileNameA(g_module, module_path, MAX_PATH);
     auto path = filesystem::path(module_path).parent_path() / L"split_view_setting";
     if ( filesystem::exists(path) == false )
@@ -328,7 +327,7 @@ public:
     }
     filesystem::directory_iterator it(path), last;
     auto menu = GetDlgItem(dialog_hwnd, LOAD_MENU);
-    int cnt = SendMessage(menu, CB_GETCOUNT, 0, 0);
+    int cnt = static_cast<int>(SendMessage(menu, CB_GETCOUNT, 0, 0));
     for ( int i = 0; i < cnt; i++ )
     {
       SendMessage(menu, CB_DELETESTRING, 0, 0);
@@ -389,7 +388,7 @@ public:
           {
             wchar_t str[1024] = {};
             auto menu = GetDlgItem(hwnd, LOAD_MENU);
-            int select = SendMessage(menu, CB_GETCURSEL, 0L, 0L);
+            int select = static_cast<int>(SendMessage(menu, CB_GETCURSEL, 0L, 0L));
             if ( select <= 0 )
             {
               D3DVIEWPORT9 viewport = this_->back_viewport_;
@@ -442,20 +441,20 @@ public:
             }
 
             auto menu = GetDlgItem(hwnd, LOAD_MENU);
-            int select = SendMessage(menu, CB_GETCURSEL, 0L, 0L);
+            int select = static_cast<int>(SendMessage(menu, CB_GETCURSEL, 0L, 0L));
             SendMessage(menu, CB_GETLBTEXT, select, (LPARAM) str.c_str());
             this_->UpdateSettingMenu();
           }
           //if ( HIWORD(wparam) == CBN_SELENDOK && LOWORD(wparam) == model_select_id )
           {
             auto model_selector = GetDlgItem(getHWND(), model_select_id);
-            this_->model_selected_id = SendMessage(model_selector, CB_GETCURSEL, 0L, 0L);
+            this_->model_selected_id = static_cast<int>(SendMessage(model_selector, CB_GETCURSEL, 0L, 0L));
           }
 
           for ( int i = 0; i < 4; ++i )
           {
             auto& data = this_->data_[i];
-            bool is_fix = IsDlgButtonChecked(hwnd, is_fix_id[i]);
+            bool is_fix = IsDlgButtonChecked(hwnd, is_fix_id[i]) == BST_CHECKED;
             data.camera_type = is_fix ? ViewData::CameraType::Fix : ViewData::CameraType::ModelTracking;
             if ( !is_fix )
             {
@@ -487,7 +486,7 @@ public:
         case WM_HSCROLL:
           for ( int i = 0; i < 4; i++ )
           {
-            this_->data_[i].alpha_val = 100 - SendDlgItemMessage(hwnd, alpha_val[i], TBM_GETPOS, 0, 0);
+            this_->data_[i].alpha_val = 100 - static_cast<int>(SendDlgItemMessage(hwnd, alpha_val[i], TBM_GETPOS, 0, 0));
           }
           break;
 
@@ -555,9 +554,8 @@ public:
         if ( data.camera_type == ViewData::CameraType::ModelTracking && this->mouse_data.type == MoveMouseData::Type::Unkown )
         {
           {
-            wchar_t str[1024];
             auto model_selector = GetDlgItem(getHWND(), model_select_id);
-            model_selected_id = SendMessage(model_selector, CB_GETCURSEL, 0L, 0L);
+            model_selected_id = static_cast<int>(SendMessage(model_selector, CB_GETCURSEL, 0L, 0L));
           }
           if ( 1 <= model_selected_id && model_selected_id <= ExpGetPmdNum() )
           {
@@ -607,11 +605,11 @@ public:
           device_->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
 #define FVF_VERTEX   (D3DFVF_XYZRHW | D3DFVF_DIFFUSE)
           D3DVERTEX pt[] = {
-            { v.X , v.Y, 0.0001, 1 , 0x30FFFF00 } ,
-            { v.X + v.Width, v.Y, 0.0001 , 1, 0x30FFFF00 } ,
-            { v.X + v.Width, v.Y + v.Height, 0.0001 , 1 , 0x30FFFF00 },
-            { v.X, v.Y + v.Height, 0.0001 , 1 , 0x30FFFF00 },
-            { v.X , v.Y , 0.0001, 1, 0x30FFFF00 } ,
+            { static_cast<float>(v.X), static_cast<float>(v.Y), 0.0001f, 1.0f, 0x30FFFF00 } ,
+            { static_cast<float>(v.X + v.Width),static_cast<float>(v.Y), 0.0001f , 1.0f, 0x30FFFF00 } ,
+            { static_cast<float>(v.X + v.Width),static_cast<float>(v.Y + v.Height), 0.0001f , 1.0f , 0x30FFFF00 },
+            { static_cast<float>(v.X), static_cast<float>(v.Y + v.Height), 0.0001f , 1.0f, 0x30FFFF00 },
+            { static_cast<float>(v.X), static_cast<float>(v.Y) , 0.0001f, 1.0f, 0x30FFFF00 } ,
           };
           DWORD fvf;
           device_->GetFVF(&fvf);
@@ -717,28 +715,6 @@ public:
 
   const char* getPluginTitle() const override { return "MMDUtility_ViewSplit"; }
 
-  std::pair<bool, LRESULT> WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) override
-  {
-    switch ( uMsg )
-    {
-    case WM_MOUSEWHEEL:
-      return { true,0 };
-    default:
-      break;
-    }
-    return { false,0 };
-  }
-
-  void WndProc(const CWPSTRUCT* param) override
-  {
-    switch ( param->message )
-    {
-    case WM_LBUTTONDOWN:
-    default:
-      break;
-    }
-  }
-
   void MouseProc(WPARAM wParam, const MOUSEHOOKSTRUCT* mouseObj) override
   {
     switch ( wParam )
@@ -824,10 +800,10 @@ public:
         break;
       case MoveMouseData::Type::CameraXYMove:
       {
-        int dx = pt.x - mouse_data.x;
-        int dy = pt.y - mouse_data.y;
+        float dx = static_cast<float>(pt.x - mouse_data.x);
+        float dy = static_cast<float>(pt.y - mouse_data.y);
         DirectX::XMVECTOR div = { -(20.0f * data_[mouse_data.id].view.getScale()) ,(20.0f * data_[mouse_data.id].view.getScale()) ,1,1 };
-        data_[mouse_data.id].camera.lookat = DirectX::XMVectorAdd(data_[mouse_data.id].camera.lookat, DirectX::XMVectorDivide(DirectX::XMVectorSet(dx, dy, 0, 0), div));
+        data_[mouse_data.id].camera.lookat = DirectX::XMVectorAdd(data_[mouse_data.id].camera.lookat, DirectX::XMVectorDivide(DirectX::XMVectorSet(dx, dy, 0.0f, 0.0f), div));
 
         mouse_data.x = pt.x;
         mouse_data.y = pt.y;
@@ -855,7 +831,7 @@ public:
     }
   }
 
-  void Reset(D3DPRESENT_PARAMETERS* pPresentationParameters) override
+  void Reset(D3DPRESENT_PARAMETERS* /*pPresentationParameters*/) override
   {
     if ( tmp_depth ) tmp_depth->Release();
     for ( auto& i : depth_buf )
@@ -865,7 +841,7 @@ public:
     }
   }
 
-  void PostReset(D3DPRESENT_PARAMETERS* pPresentationParameters, HRESULT& res) override
+  void PostReset(D3DPRESENT_PARAMETERS* /*pPresentationParameters*/, HRESULT& /*res*/) override
   {
     ResetDepthBuffer();
   }
@@ -886,6 +862,7 @@ public:
       }
       return true;
     }
+    return false;
   }
 
   std::array<IDirect3DSurface9*, 5> depth_buf = {};
