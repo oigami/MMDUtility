@@ -757,6 +757,23 @@ namespace mmp
     int looking_bone_index;
   };
 
+  struct BoneCurrentData
+  {
+    char name_jp[20];
+    char name_en[20];
+    int __unknown10[5];
+    D3DMATRIX __unknown_mat[4];
+    float init_x, init_y, init_z;
+    float x, y, z;
+    float __unknown10_rotation_q[4];
+    float __unknown20_rotation_q[4];
+    float x2, y2, z2;
+    float __unknown30_rotation_q[4];
+    int __unknown30[56];
+  };
+
+  static_assert(sizeof(BoneCurrentData) == 624, "");
+
   struct MMDModelData
   {
     int __unknown10[2224];
@@ -765,11 +782,12 @@ namespace mmp
     char comment_jp[256];
     char comment_en[292]; // もしかしたら別の領域に分かれてるかも
     wchar_t file_path[256];
-    int __unknown20[12];
+    BoneCurrentData* bone_current_data;
+    int __unknown20[10];
     char keyframe_editor_toplevel_rows;
     void* __unknown30[2];
 
-    struct BonekeyFrame
+    struct BoneKeyFrame
     {
       int frame_number;
       int pre_index;
