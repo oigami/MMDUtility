@@ -801,7 +801,31 @@ namespace mmp
       int __unknown;
     }* bone_keyframe;
 
-    void* __unknown32[2];
+    struct MorphKeyFrame
+    {
+      int frame_number;
+      int pre_index;
+      int next_index;
+      float value;
+      char is_selected;
+    }* morph_keyframe;
+
+    struct ConfigurationKeyFrame
+    {
+      int frame_number;
+      int pre_index;
+      int next_index;
+      char is_visible;
+      char* is_ik_enabled;
+      int __unknown[2];
+
+      struct RelationSetting
+      {
+        int parent_model_index;
+        int parent_bone_index;
+      }* relation_setting;
+    }* configuration_keyframe;
+
     int __unknown40[600];
     char render_order;
     int morph_count;
