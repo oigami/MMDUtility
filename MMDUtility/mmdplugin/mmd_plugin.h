@@ -753,8 +753,60 @@ namespace mmp
     int is_perspective;
     int view_angle;
     int is_selected; // 1で選択している。0で選択していない
-    int __unknown2[2]; // looking_model_index, looking_bone_index
+    int looking_model_index;
+    int looking_bone_index;
   };
+
+  struct MMDModelData
+  {
+    int __unknown10[2224];
+    char name_jp[50];
+    char name_en[50];
+    char comment_jp[256];
+    char comment_en[292]; // もしかしたら別の領域に分かれてるかも
+    wchar_t file_path[256];
+    int __unknown20[12];
+    char keyframe_editor_toplevel_rows;
+    void* __unknown30[2];
+
+    struct BonekeyFrame
+    {
+      int frame_number;
+      int pre_index;
+      int next_index;
+      char interpolation_curve_x1[4];
+      char interpolation_curve_y1[4];
+      char interpolation_curve_x2[4];
+      char interpolation_curve_y2[4];
+      float x, y, z;
+      float rotation_q[4];
+      int __unknown;
+    }* bone_keyframe;
+
+    void* __unknown32[2];
+    int __unknown40[600];
+    char render_order;
+    int morph_count;
+    int bone_count;
+    int ik_count;
+    char __unknown45;
+    char is_visible;
+    int selected_bone;
+    int __unknown50[4];
+    int selected_morph_indices[4];
+    int __unknown59[257];
+    int vscroll;
+    int last_frame_number;
+    int __unknown60[150475];
+    int parentable_bone_count;
+  };
+
+  static constexpr int a = offsetof(MMDModelData, selected_morph_indices);
+  static_assert(8896 == offsetof(MMDModelData, name_jp), "");
+  static_assert(10104 == offsetof(MMDModelData, keyframe_editor_toplevel_rows), "");
+  static_assert(12560 == offsetof(MMDModelData, bone_count), "");
+  static_assert(12572 == offsetof(MMDModelData, selected_bone), "");
+  static_assert(12592 == offsetof(MMDModelData, selected_morph_indices), "");
 
   struct MMDMainData
   {
@@ -805,7 +857,7 @@ namespace mmp
     int __unknown60[22];
     CameraKeyFrameData (&camera_key_frame)[10000];
     void* __unknown_pointer20[258];
-    void* __unknown_pointer30[255]; // 起動時nullモデルを読み込むと順番にポインタが入る
+    MMDModelData* model_data[255]; // 起動時nullモデルを読み込むと順番にポインタが入る
     int select_model;
 
     enum class SelectBoneType : int
