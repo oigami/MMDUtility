@@ -111,7 +111,7 @@ namespace control
   {
     explicit MenuDelegate(Control* ctrl) : IMenu(ctrl) {}
 
-    MenuDelegate(Control* ctrl, int id) : IMenu(ctrl, id) {}
+    MenuDelegate(Control* ctrl, int id) : IMenu(ctrl, id) { IMenu::SetType(Type::Command); }
 
     void MenuSelect(HWND hwnd, UINT item_id_or_index, MenuFlag flag, HMENU hMenu) override
     {
@@ -162,8 +162,14 @@ public:
 
   std::pair<bool, LRESULT> WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) override;
 
-  const char* getPluginTitle() const override { return "MMDUtility"; }
+  const char* getPluginTitle() const override { return mmd_utility; }
 
+  static constexpr char* mmd_utility = "MMDUtility";
+
+  static MMDUtility* getObject()
+  {
+    return dynamic_cast<MMDUtility*>(mmp::getDLL3Object(mmd_utility));
+  }
 private:
   control::Control* ctrl_;
   control::IMenu* top_menu_;

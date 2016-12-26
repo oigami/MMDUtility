@@ -35,6 +35,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "AutoSave", "AutoSave\AutoSa
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "CameraUndo", "CameraUndo\CameraUndo.vcxproj", "{678C1EA3-F6BA-4ECF-8476-6694680A3F34}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "HideModel", "HideModel\HideModel.vcxproj", "{C4B14EE2-0241-406D-A7CD-E31E50E9169B}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -87,6 +89,14 @@ Global
 		{678C1EA3-F6BA-4ECF-8476-6694680A3F34}.Release|x64.Build.0 = Release|x64
 		{678C1EA3-F6BA-4ECF-8476-6694680A3F34}.Release|x86.ActiveCfg = Release|Win32
 		{678C1EA3-F6BA-4ECF-8476-6694680A3F34}.Release|x86.Build.0 = Release|Win32
+		{C4B14EE2-0241-406D-A7CD-E31E50E9169B}.Debug|x64.ActiveCfg = Debug|x64
+		{C4B14EE2-0241-406D-A7CD-E31E50E9169B}.Debug|x64.Build.0 = Debug|x64
+		{C4B14EE2-0241-406D-A7CD-E31E50E9169B}.Debug|x86.ActiveCfg = Debug|Win32
+		{C4B14EE2-0241-406D-A7CD-E31E50E9169B}.Debug|x86.Build.0 = Debug|Win32
+		{C4B14EE2-0241-406D-A7CD-E31E50E9169B}.Release|x64.ActiveCfg = Release|x64
+		{C4B14EE2-0241-406D-A7CD-E31E50E9169B}.Release|x64.Build.0 = Release|x64
+		{C4B14EE2-0241-406D-A7CD-E31E50E9169B}.Release|x86.ActiveCfg = Release|Win32
+		{C4B14EE2-0241-406D-A7CD-E31E50E9169B}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
