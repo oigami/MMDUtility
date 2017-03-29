@@ -538,6 +538,9 @@ namespace
   mmp::WinAPIHooker<decltype(_wsopen_s)*> f_wsopen_s;
   char save_buf[1024 * 1024 * 10];
 
+  mmp::WinAPIHooker<decltype(_write)*> f_write;
+  mmp::WinAPIHooker<decltype(_close)*> f_close;
+
   errno_t Mywsopen_s(int* pfh, const wchar_t* filename, int oflag, int shflag, int pmode)
   {
     filesystem::path path = filename;
@@ -561,6 +564,10 @@ namespace
       int len = swprintf_s(buf, L"_%d-%02d-%02d_%02d-%02d-%02d.pmm", now->tm_year + 1900, now->tm_mon + 1, now->tm_mday, now->tm_hour, now->tm_min, now->tm_sec);
       save_path /= fname;
       save_path.concat(buf, buf + len);
+      // mme がここをフックしてemmを保存してるのでただ開いて閉じることで対応
+      int tmp;
+      f_wsopen_s(&tmp, save_path.wstring().c_str(), oflag, shflag, pmode);
+      f_close(tmp);
       std::ofstream ofs(save_path, std::ios::binary);
       ofs.rdbuf()->pubsetbuf(save_buf, sizeof(save_buf));
       if ( ofs.is_open() == false )
@@ -573,8 +580,6 @@ namespace
     return f_wsopen_s(pfh, filename, oflag, shflag, pmode);
   }
 
-  mmp::WinAPIHooker<decltype(_write)*> f_write;
-
   int __cdecl MyWrite(int fd, const void* buffer, unsigned int count)
   {
     if ( -1 == fd )
@@ -585,7 +590,6 @@ namespace
     return f_write(fd, buffer, count);
   }
 
-  mmp::WinAPIHooker<decltype(_close)*> f_close;
 
 
   errno_t Myclose(int pfh)
