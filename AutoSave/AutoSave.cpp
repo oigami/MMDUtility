@@ -472,6 +472,14 @@ public:
   void save()
   {
     if ( is_runnable == false ) return;
+    auto mmd = mmp::getMMDMainData();
+    if(mmd->pmm_path[0]=='\0')
+    {
+      MessageBoxW(getHWND(), LR"(現在編集中のデータはpmmファイルに保存されていないので自動バックアップできません。
+新規作業中でも名前をつけて保存することを推奨します。
+このメッセージは自動バックアップのタイミングで毎回表示されます。)", L"警告", MB_OK);
+      return;
+    }
     auto save_func = (void(*)(mmp::MMDMainData*))((char*) GetModuleHandleW(nullptr) + 0x750D0);
     is_saving = true;
     save_func(mmp::getMMDMainData());

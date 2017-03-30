@@ -930,6 +930,8 @@ namespace mmp
     int output_size_x;
     int output_size_y;
     float length;
+    unsigned char __unknown120[32];
+    wchar_t pmm_path[256];
   };
 
 
@@ -937,6 +939,7 @@ namespace mmp
   static_assert(648405 == offsetof(MMDMainData, edit_interpolation_curve), "");
   static_assert(660344 == offsetof(MMDMainData, is_camera_select), "");
   static_assert(661752 == offsetof(MMDMainData, length), "");
+  static_assert(661788 == offsetof(MMDMainData, pmm_path), "");
 
   inline MMDMainData* getMMDMainData()
   {
