@@ -15,5 +15,7 @@
 https://github.com/oigami/MMDUtility/wiki/how_to_install
 
 ・更新履歴
+Ver 0.10
+  emmファイルの自動バックアップ時に上限を超えても過去のファイルが削除されない不具合を修正
 Ver 0.09
   MMEのemmファイルも自動バックアップするように変更

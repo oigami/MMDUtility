@@ -464,6 +464,11 @@ public:
       if ( it->path().has_extension() && it->path().extension() == L".pmm" )
       {
         filesystem::remove(it->path());
+        auto emm = it->path();
+        if ( filesystem::exists(emm.replace_extension(".emm")) )
+        {
+          filesystem::remove(emm.replace_extension(".emm"));
+        }
         size--;
       }
     }
@@ -628,4 +633,12 @@ MMDPluginDLL3* create3(IDirect3DDevice9*)
   OpenConsole();
 #endif // !NDEBUG
   return new AutoSave();
+}
+
+void destroy3(MMDPluginDLL3* p)
+{
+  f_write.reset();
+  f_wsopen_s.reset();
+  f_close.reset();
+  delete p;
 }
